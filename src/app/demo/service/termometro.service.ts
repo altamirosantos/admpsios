@@ -1,7 +1,7 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { environment } from '../../../environments/environment';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 
 @Injectable({
@@ -38,6 +38,13 @@ export class TermometroService {
         return this.http.get(`${environment.API_ENDPOINT}/${this.resource}/findall`, { headers: headers });
         //return new ServerDataSource(this.http, { dataKey: 'rows', endPoint: `${environment.API_ENDPOINT}/${this.resource}/findall` });
     }
+
+    findItemTermometroAll(id: any) {
+        let headers = new HttpHeaders();
+        return this.http.get(`${environment.API_ENDPOINT}/itemtermometro/findallbytermometro/id/${id}`, { headers: headers });
+        //return new ServerDataSource(this.http, { dataKey: 'rows', endPoint: `${environment.API_ENDPOINT}/${this.resource}/findall` });
+    }
+
 
     getSelect(): Observable<any> {
         let headers = new HttpHeaders();
