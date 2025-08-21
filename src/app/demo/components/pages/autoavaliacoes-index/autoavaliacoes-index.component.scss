@@ -1,0 +1,11 @@
+.clickable-rows .p-datatable-tbody > tr {
+  cursor: pointer;          /* muda o cursor */
+}
+
+.clickable-rows .p-datatable-tbody > tr:hover {
+  background-color: #eae0fa; /* destaque ao passar o mouse */
+}
+
+.clickable-rows .p-datatable-tbody > tr.selected {
+  background-color: #b2ebf2; /* linha selecionada */
+}

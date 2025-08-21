@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "../../React/app-psios"
+		},
+		{
+			"path": "../../Node/psios-finetune"
+		},
+		{
+			"path": "."
+		}
+	],
+	"settings": {}
+}

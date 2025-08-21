@@ -4,15 +4,16 @@ import { SupabaseService } from './supabase.service';
 @Injectable({
   providedIn: 'root'
 })
-export class RespostasService {
-  private table = 'respostas';
+export class AutoavaliacaoService {
+  private table = 'autoavaliacao';
 
   constructor(private supabaseService: SupabaseService) {}
 
   async getAll() {
     const { data, error } = await this.supabaseService['supabase']
       .from(this.table)
-      .select('*, perguntas(*)'); // opcional: traz a pergunta vinculada
+      .select('*')
+      .order('created_at', { ascending: false });
     if (error) throw error;
     return data;
   }
@@ -20,7 +21,7 @@ export class RespostasService {
   async getById(id: number) {
     const { data, error } = await this.supabaseService['supabase']
       .from(this.table)
-      .select('*, perguntas(*)')
+      .select('*, autoavaliacao(*)')
       .eq('id', id)
       .single();
     if (error) throw error;

@@ -72,17 +72,17 @@ export class PerguntaIndexComponent {
     }
 
     addItem() {
-        const a = [
-        'Senti abertura no peito ou nó na garganta',
-    'Fiquei com o corpo tenso ou acelerado',
-    'Senti cansaço arrependido ou vontade de dormir',
-    'Tive vontade de sair correndo ou sumir',
-    'Nenhuma ocorrência física percebida'
+    /*    const a = [
+       'Ter mais pensamentos positivos',
+    'Reduzir a ansiedade e o estresse',
+    'Me sentir mais confiante',
+    'Ter mais equilíbrio nas emoções',
+    'Me sentir mais valorizado(a)'
         ];
-        const perguntaID = '6b6561d2-abf4-47e8-9fb4-def2393bc127';
+        const perguntaID = 'eb8aa924-56ce-481b-93f1-60ae02b09515';
         for (let i = 0; i < a.length; i++) {
             this.respostasService.create({ descricao: a[i], devolutiva: null, pergunta_id: perguntaID });
-        }
+        }*/
     }
 
     editItem(item) {
@@ -107,7 +107,7 @@ export class PerguntaIndexComponent {
 
     saveResposta() {
         console.log('resposta >> ', this.resposta);
-        this.respostasService.update(this.resposta.id, { devolutiva: this.resposta.devolutiva });
+        this.respostasService.update(this.resposta.id, { devolutiva: this.resposta.devolutiva, sugestao: this.resposta.sugestao });
         this.respostaDialog = false;
     }
 
