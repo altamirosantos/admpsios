@@ -24,7 +24,8 @@ export class AppMenuComponent implements OnInit {
                 items: [
                     { label: 'Perguntas', icon: 'pi pi-fw pi-id-card', routerLink: ['/pages/pergunta'] },
                     { label: 'Autoavaliações', icon: 'pi pi-fw pi-id-card', routerLink: ['/pages/autoavaliacoes'] },
-                    { label: 'Termometro', icon: 'pi pi-fw pi-id-card', routerLink: ['/pages/termometro'] },
+                    { label: 'Resources', icon: 'pi pi-fw pi-id-card', routerLink: ['/pages/resources'] },
+                    //{ label: 'Termometro', icon: 'pi pi-fw pi-id-card', routerLink: ['/pages/termometro'] },
                 ]
             },
            /* {
