@@ -1,0 +1,204 @@
+<p-toast></p-toast>
+
+<div class="grid">
+    <div class="col-12">
+        <div class="card">
+            <p-toolbar styleClass="mb-4">
+                <ng-template pTemplate="left">
+                    <div>
+                        <h5 class="m-0">Jogos Interativos</h5>
+                        <small class="text-color-secondary">Tela principal de cadastro da tabela <strong>jogo_interativo</strong>.</small>
+                    </div>
+                </ng-template>
+                <ng-template pTemplate="right">
+                    <button pButton pRipple label="Novo jogo" icon="pi pi-plus" (click)="openNewJogo()"></button>
+                </ng-template>
+            </p-toolbar>
+
+            <p-table
+                [value]="jogos"
+                [loading]="loadingJogos"
+                selectionMode="single"
+                [(selection)]="selectedJogo"
+                dataKey="id"
+                responsiveLayout="scroll"
+                styleClass="p-datatable-striped">
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th scope="col" style="width: 120px">Nome</th>
+                        <th scope="col">Título</th>
+                        <th scope="col" style="width: 180px">Criado em</th>
+                        <th scope="col" style="width: 120px">Ações</th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-jogo>
+                    <tr [pSelectableRow]="jogo" tabindex="0" (click)="selectJogo(jogo)" (keydown)="onJogoRowKeydown($event, jogo)">
+                        <td class="font-bold">{{ jogo.nome }}</td>
+                        <td>{{ jogo.titulo }}</td>
+                        <td>{{ jogo.created_at | date: 'dd/MM/yyyy HH:mm' }}</td>
+                        <td>
+                            <button pButton pRipple icon="pi pi-pencil" class="p-button-rounded p-button-success mr-2"
+                                (click)="$event.stopPropagation(); editJogo(jogo)"></button>
+                            <button pButton pRipple icon="pi pi-trash" class="p-button-rounded p-button-danger"
+                                (click)="$event.stopPropagation(); confirmDeleteJogo(jogo)"></button>
+                        </td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr>
+                        <td colspan="4">Nenhum jogo interativo cadastrado.</td>
+                    </tr>
+                </ng-template>
+            </p-table>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <div class="card">
+            <div class="flex flex-column md:flex-row md:align-items-center md:justify-content-between gap-3 mb-4">
+                <div>
+                    <h5 class="m-0">Perguntas do jogo</h5>
+                    <small class="text-color-secondary" *ngIf="selectedJogo; else semJogoSelecionado">
+                        Gerencie as perguntas vinculadas a <strong>{{ selectedJogo.titulo }}</strong>.
+                    </small>
+                    <ng-template #semJogoSelecionado>
+                        <small class="text-color-secondary">Selecione um jogo interativo para visualizar ou cadastrar perguntas.</small>
+                    </ng-template>
+                </div>
+                <button pButton pRipple label="Nova pergunta" icon="pi pi-plus" [disabled]="!selectedJogo" (click)="openNewQuestao()"></button>
+            </div>
+
+            <p-table
+                [value]="questoes"
+                [loading]="loadingQuestoes"
+                responsiveLayout="scroll"
+                styleClass="p-datatable-striped">
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th scope="col">Pergunta</th>
+                        <th scope="col" style="width: 240px">Opções</th>
+                        <th scope="col" style="width: 220px">Resposta correta</th>
+                        <th scope="col" style="width: 240px">Explicação</th>
+                        <th scope="col" style="width: 240px">Insight</th>
+                        <th scope="col" style="width: 120px">Ações</th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-questao>
+                    <tr>
+                        <td>{{ questao.question }}</td>
+                        <td>
+                            <div class="options-preview">{{ questao.options.join('\n') }}</div>
+                        </td>
+                        <td>
+                            <strong>{{ questao.correct_answer }}</strong>
+                            <div class="text-color-secondary mt-1">{{ getCorrectAnswerLabel(questao) }}</div>
+                        </td>
+                        <td>{{ questao.explanation || '—' }}</td>
+                        <td>{{ questao.insight || '—' }}</td>
+                        <td>
+                            <button pButton pRipple icon="pi pi-pencil" class="p-button-rounded p-button-success mr-2"
+                                (click)="editQuestao(questao)"></button>
+                            <button pButton pRipple icon="pi pi-trash" class="p-button-rounded p-button-danger"
+                                (click)="confirmDeleteQuestao(questao)"></button>
+                        </td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr>
+                        <td colspan="6">
+                            {{ selectedJogo ? 'Nenhuma pergunta cadastrada para este jogo.' : 'Selecione um jogo para carregar as perguntas.' }}
+                        </td>
+                    </tr>
+                </ng-template>
+            </p-table>
+        </div>
+    </div>
+</div>
+
+<p-dialog [(visible)]="jogoDialog" [style]="{ width: '500px' }" [modal]="true"
+    [header]="jogo.id ? 'Editar jogo interativo' : 'Novo jogo interativo'" class="p-fluid">
+    <ng-template pTemplate="content">
+        <div class="field">
+            <label for="nome">Nome</label>
+            <input id="nome" type="text" pInputText [(ngModel)]="jogo.nome" required autofocus />
+            <small class="p-error" *ngIf="submittedJogo && !jogo.nome?.trim()">O nome é obrigatório.</small>
+        </div>
+
+        <div class="field">
+            <label for="titulo">Título</label>
+            <input id="titulo" type="text" pInputText [(ngModel)]="jogo.titulo" required />
+            <small class="p-error" *ngIf="submittedJogo && !jogo.titulo?.trim()">O título é obrigatório.</small>
+        </div>
+    </ng-template>
+
+    <ng-template pTemplate="footer">
+        <button pButton pRipple label="Cancelar" icon="pi pi-times" class="p-button-text" (click)="hideJogoDialog()"></button>
+        <button pButton pRipple label="Salvar" icon="pi pi-check" class="p-button-text" (click)="saveJogo()"></button>
+    </ng-template>
+</p-dialog>
+
+<p-dialog [(visible)]="questaoDialog" [style]="{ width: '700px' }" [modal]="true"
+    [header]="questao.id ? 'Editar pergunta' : 'Nova pergunta'" class="p-fluid">
+    <ng-template pTemplate="content">
+        <div class="field">
+            <label for="question">Pergunta</label>
+            <textarea id="question" pInputTextarea [(ngModel)]="questao.question" rows="4"></textarea>
+            <small class="p-error" *ngIf="submittedQuestao && !questao.question?.trim()">A pergunta é obrigatória.</small>
+        </div>
+
+        <div class="field">
+            <label for="optionsText">Opções</label>
+            <textarea id="optionsText" pInputTextarea [(ngModel)]="questao.optionsText" rows="6"></textarea>
+            <small class="text-color-secondary">Informe uma opção por linha. São necessárias pelo menos 2 opções.</small>
+            <small class="p-error block" *ngIf="submittedQuestao && parseOptions(questao.optionsText || '').length < 2">
+                Informe pelo menos 2 opções válidas.
+            </small>
+        </div>
+
+        <div class="field">
+            <label for="correctAnswer">Índice da resposta correta</label>
+            <p-inputNumber inputId="correctAnswer" [(ngModel)]="questao.correct_answer" [min]="0" [showButtons]="true"></p-inputNumber>
+            <small class="text-color-secondary">Use índice baseado em zero: 0 para a primeira opção, 1 para a segunda e assim por diante.</small>
+            <small class="p-error block" *ngIf="submittedQuestao && (questao.correct_answer === undefined || questao.correct_answer === null || questao.correct_answer < 0 || questao.correct_answer >= parseOptions(questao.optionsText || '').length)">
+                Informe um índice válido para a resposta correta.
+            </small>
+        </div>
+
+        <div class="field">
+            <label for="explanation">Explicação</label>
+            <textarea id="explanation" pInputTextarea [(ngModel)]="questao.explanation" rows="4"></textarea>
+        </div>
+
+        <div class="field">
+            <label for="insight">Insight</label>
+            <textarea id="insight" pInputTextarea [(ngModel)]="questao.insight" rows="4"></textarea>
+        </div>
+    </ng-template>
+
+    <ng-template pTemplate="footer">
+        <button pButton pRipple label="Cancelar" icon="pi pi-times" class="p-button-text" (click)="hideQuestaoDialog()"></button>
+        <button pButton pRipple label="Salvar" icon="pi pi-check" class="p-button-text" (click)="saveQuestao()"></button>
+    </ng-template>
+</p-dialog>
+
+<p-dialog [(visible)]="deleteJogoDialog" header="Confirmação" [modal]="true" [style]="{ width: '450px' }">
+    <div class="flex align-items-center justify-content-center">
+        <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem"></i>
+        <span *ngIf="jogo">Confirma exclusão do jogo <b>{{ jogo.titulo }}</b>?</span>
+    </div>
+    <ng-template pTemplate="footer">
+        <button pButton pRipple icon="pi pi-times" class="p-button-text" label="Não" (click)="deleteJogoDialog = false"></button>
+        <button pButton pRipple icon="pi pi-check" class="p-button-text" label="Sim" (click)="deleteJogo()"></button>
+    </ng-template>
+</p-dialog>
+
+<p-dialog [(visible)]="deleteQuestaoDialog" header="Confirmação" [modal]="true" [style]="{ width: '450px' }">
+    <div class="flex align-items-center justify-content-center">
+        <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem"></i>
+        <span *ngIf="selectedQuestao">Confirma exclusão da pergunta selecionada?</span>
+    </div>
+    <ng-template pTemplate="footer">
+        <button pButton pRipple icon="pi pi-times" class="p-button-text" label="Não" (click)="deleteQuestaoDialog = false"></button>
+        <button pButton pRipple icon="pi pi-check" class="p-button-text" label="Sim" (click)="deleteQuestao()"></button>
+    </ng-template>
+</p-dialog>

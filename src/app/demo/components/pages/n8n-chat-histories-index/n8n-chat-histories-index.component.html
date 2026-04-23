@@ -1,0 +1,103 @@
+<p-toast></p-toast>
+
+<div class="grid">
+    <div class="col-12">
+        <div class="card">
+            <p-toolbar styleClass="mb-4">
+                <ng-template pTemplate="left">
+                    <div>
+                        <h5 class="m-0">Histórico de Chat</h5>
+                        <small class="text-color-secondary">Listagem da tabela <strong>n8n_chat_histories</strong> em formato de conversa.</small>
+                    </div>
+                </ng-template>
+            </p-toolbar>
+
+            <div class="grid formgrid mb-4 chat-filters-grid">
+                <div class="field col-12 md:col-4">
+                    <label for="userId">Usuário</label>
+                    <p-dropdown
+                        inputId="userId"
+                        [options]="userOptions"
+                        [(ngModel)]="selectedUserId"
+                        optionLabel="label"
+                        optionValue="value"
+                        [showClear]="true"
+                        placeholder="Selecione um usuário">
+                    </p-dropdown>
+                </div>
+
+                <div class="field col-12 md:col-3">
+                    <label for="startDate">Data inicial</label>
+                    <p-calendar
+                        inputId="startDate"
+                        [(ngModel)]="startDate"
+                        dateFormat="dd/mm/yy"
+                        [showIcon]="true"
+                        appendTo="body"
+                        placeholder="Selecione">
+                    </p-calendar>
+                </div>
+
+                <div class="field col-12 md:col-3">
+                    <label for="endDate">Data final</label>
+                    <p-calendar
+                        inputId="endDate"
+                        [(ngModel)]="endDate"
+                        dateFormat="dd/mm/yy"
+                        [showIcon]="true"
+                        appendTo="body"
+                        placeholder="Selecione">
+                    </p-calendar>
+                </div>
+
+                <div class="field col-12 md:col-2 chat-filters-actions">
+                    <span class="chat-filters-actions-label" aria-hidden="true">Ações</span>
+                    <div class="chat-filters-actions-row">
+                        <button pButton pRipple type="button" label="Filtrar" icon="pi pi-filter" (click)="applyFilters()"></button>
+                        <button pButton pRipple type="button" label="Limpar" icon="pi pi-refresh" class="p-button-text" (click)="clearFilters()"></button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-summary mb-3">
+                <span class="font-semibold">{{ totalRecords }}</span>
+                <span class="text-color-secondary">mensagens encontradas</span>
+            </div>
+
+            <p-paginator
+                class="mb-3"
+                [first]="firstRecordIndex"
+                [rows]="pageSize"
+                [totalRecords]="totalRecords"
+                [rowsPerPageOptions]="pageSizeOptions"
+                [showCurrentPageReport]="true"
+                [currentPageReportTemplate]="currentPageReport"
+                (onPageChange)="onPageChange($event)">
+            </p-paginator>
+
+            <div class="chat-list" [class.chat-list-loading]="loading">
+                <div class="chat-empty" *ngIf="!loading && !chatMessages.length">
+                    Nenhuma mensagem encontrada para os filtros informados.
+                </div>
+
+                <div
+                    class="chat-row"
+                    *ngFor="let message of chatMessages; trackBy: trackByMessage"
+                    [class.chat-row-human]="message.messageType === 'human'"
+                    [class.chat-row-ai]="message.messageType === 'ai'"
+                    [class.chat-row-system]="message.messageType === 'system'">
+
+                    <div class="chat-meta">
+                        <span class="chat-author">{{ getMessageTypeLabel(message.messageType) }}</span>
+                        <span class="chat-user">{{ message.userId }}</span>
+                        <span class="chat-date" *ngIf="message.createdAtDate">{{ message.createdAtDate | date: 'dd/MM/yyyy HH:mm:ss' }}</span>
+                    </div>
+
+                    <div class="chat-bubble">
+                        <pre class="chat-content">{{ message.content }}</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
