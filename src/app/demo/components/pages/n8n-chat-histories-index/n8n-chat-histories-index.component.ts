@@ -10,12 +10,21 @@ type ChatMessageType = 'human' | 'ai' | 'system' | 'unknown';
 
 interface ChatMessageViewModel {
     id: number | string | null;
+    sessionId: string;
     userId: string;
     createdAt: string;
     createdAtDate: Date | null;
     messageType: ChatMessageType;
     content: string;
     rawMessage: string;
+}
+
+interface ChatSessionGroup {
+    sessionId: string;
+    sessionDisplayId: string;
+    userId: string;
+    startedAt: Date | null;
+    messages: ChatMessageViewModel[];
 }
 
 @Component({
@@ -27,6 +36,7 @@ interface ChatMessageViewModel {
 export class N8nChatHistoriesIndexComponent implements OnInit {
     userOptions: { label: string; value: string | null }[] = [];
     chatMessages: ChatMessageViewModel[] = [];
+    chatSessions: ChatSessionGroup[] = [];
     totalRecords = 0;
     pageIndex = 0;
     pageSize = 20;
@@ -135,6 +145,7 @@ export class N8nChatHistoriesIndexComponent implements OnInit {
             });
 
             this.chatMessages = response.data.map((history) => this.mapToViewModel(history));
+            this.chatSessions = this.groupMessagesBySession(this.chatMessages);
             this.totalRecords = response.total;
         } catch (error) {
             console.error('Erro ao filtrar histórico de chat:', error);
@@ -166,6 +177,14 @@ export class N8nChatHistoriesIndexComponent implements OnInit {
         return message.id;
     }
 
+    trackBySession(_: number, session: ChatSessionGroup): string {
+        return session.sessionId;
+    }
+
+    getSessionMessageCountLabel(totalMessages: number): string {
+        return totalMessages === 1 ? '1 mensagem' : `${totalMessages} mensagens`;
+    }
+
     private formatProfileLabel(profile: ProfileOption): string {
         const nome = profile.nome?.trim();
         const apelido = profile.apelido?.trim();
@@ -190,6 +209,7 @@ export class N8nChatHistoriesIndexComponent implements OnInit {
 
         return {
             id: history.id ?? null,
+            sessionId: history.session_id || 'Sem sessão',
             userId: history.user_id || 'Sem usuário',
             createdAt: history.created_at,
             createdAtDate: history.created_at ? new Date(history.created_at) : null,
@@ -197,6 +217,39 @@ export class N8nChatHistoriesIndexComponent implements OnInit {
             content: parsedMessage.content,
             rawMessage: parsedMessage.rawMessage
         };
+    }
+
+    private groupMessagesBySession(messages: ChatMessageViewModel[]): ChatSessionGroup[] {
+        const sessions = new Map<string, ChatSessionGroup>();
+
+        for (const message of messages) {
+            const existingSession = sessions.get(message.sessionId);
+
+            if (existingSession) {
+                existingSession.messages.push(message);
+                continue;
+            }
+
+            sessions.set(message.sessionId, {
+                sessionId: message.sessionId,
+                sessionDisplayId: this.extractDisplaySessionId(message.sessionId),
+                userId: message.userId,
+                startedAt: message.createdAtDate,
+                messages: [message]
+            });
+        }
+
+        return Array.from(sessions.values());
+    }
+
+    private extractDisplaySessionId(sessionId: string): string {
+        const separatorIndex = sessionId.indexOf('|');
+
+        if (separatorIndex === -1) {
+            return sessionId;
+        }
+
+        return sessionId.slice(separatorIndex + 1) || sessionId;
     }
 
     private parseMessage(message: unknown): { type: ChatMessageType; content: string; rawMessage: string } {

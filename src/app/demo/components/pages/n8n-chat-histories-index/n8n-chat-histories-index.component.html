@@ -81,20 +81,37 @@
                 </div>
 
                 <div
-                    class="chat-row"
-                    *ngFor="let message of chatMessages; trackBy: trackByMessage"
-                    [class.chat-row-human]="message.messageType === 'human'"
-                    [class.chat-row-ai]="message.messageType === 'ai'"
-                    [class.chat-row-system]="message.messageType === 'system'">
+                    class="chat-session"
+                    *ngFor="let session of chatSessions; trackBy: trackBySession">
 
-                    <div class="chat-meta">
-                        <span class="chat-author">{{ getMessageTypeLabel(message.messageType) }}</span>
-                        <span class="chat-user">{{ message.userId }}</span>
-                        <span class="chat-date" *ngIf="message.createdAtDate">{{ message.createdAtDate | date: 'dd/MM/yyyy HH:mm:ss' }}</span>
+                    <div class="chat-session-header">
+                        <div class="chat-session-title-row">
+                            <span class="chat-session-title">Sessão</span>
+                            <span class="chat-session-id">{{ session.sessionDisplayId }}</span>
+                        </div>
+
+                        <div class="chat-session-meta">
+                            <span class="chat-user">{{ session.userId }}</span>
+                            <span class="chat-session-count">{{ getSessionMessageCountLabel(session.messages.length) }}</span>
+                            <span class="chat-date" *ngIf="session.startedAt">{{ session.startedAt | date: 'dd/MM/yyyy HH:mm:ss' }}</span>
+                        </div>
                     </div>
 
-                    <div class="chat-bubble">
-                        <pre class="chat-content">{{ message.content }}</pre>
+                    <div
+                        class="chat-row"
+                        *ngFor="let message of session.messages; trackBy: trackByMessage"
+                        [class.chat-row-human]="message.messageType === 'human'"
+                        [class.chat-row-ai]="message.messageType === 'ai'"
+                        [class.chat-row-system]="message.messageType === 'system'">
+
+                        <div class="chat-meta">
+                            <span class="chat-author">{{ getMessageTypeLabel(message.messageType) }}</span>
+                            <span class="chat-date" *ngIf="message.createdAtDate">{{ message.createdAtDate | date: 'dd/MM/yyyy HH:mm:ss' }}</span>
+                        </div>
+
+                        <div class="chat-bubble">
+                            <pre class="chat-content">{{ message.content }}</pre>
+                        </div>
                     </div>
                 </div>
             </div>

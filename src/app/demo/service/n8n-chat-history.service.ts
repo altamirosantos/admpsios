@@ -3,6 +3,7 @@ import { SupabaseService } from './supabase.service';
 
 export interface N8nChatHistoryRecord {
   id?: number | string;
+  session_id: string | null;
   user_id: string | null;
   message: unknown;
   created_at: string;
@@ -40,6 +41,10 @@ export class N8nChatHistoryService {
 
   constructor(private readonly supabaseService: SupabaseService) {}
 
+  private buildSessionPrefixFilter(userId: string): string {
+    return `${userId}|%`;
+  }
+
   async getProfiles(): Promise<ProfileOption[]> {
     const { data, error } = await this.supabaseService.client
       .from('profiles')
@@ -58,11 +63,11 @@ export class N8nChatHistoryService {
 
     let query = this.supabaseService.client
       .from(this.tableName)
-      .select('id, user_id, message, created_at')
+      .select('id, session_id, user_id, message, created_at')
       .order('created_at', { ascending: true });
 
     if (filters.userId) {
-      query = query.eq('user_id', filters.userId);
+      query = query.ilike('session_id', this.buildSessionPrefixFilter(filters.userId));
     }
 
     query = query
@@ -91,12 +96,12 @@ export class N8nChatHistoryService {
 
     let query = this.supabaseService.client
       .from(this.tableName)
-      .select('id, user_id, message, created_at', { count: 'exact' })
+      .select('id, session_id, user_id, message, created_at', { count: 'exact' })
       .order('created_at', { ascending: true })
       .range(from, to);
 
     if (normalizedFilters.userId) {
-      query = query.eq('user_id', normalizedFilters.userId);
+      query = query.ilike('session_id', this.buildSessionPrefixFilter(normalizedFilters.userId));
     }
 
     query = query
