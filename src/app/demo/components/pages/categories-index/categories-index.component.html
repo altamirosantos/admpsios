@@ -1,0 +1,84 @@
+<p-toast></p-toast>
+
+<div class="grid">
+    <div class="col-12">
+        <div class="card">
+            <p-toolbar styleClass="mb-4">
+                <ng-template pTemplate="left">
+                    <div>
+                        <h5 class="m-0">Categorias de Mídia</h5>
+                        <small class="text-color-secondary">Cadastro da tabela <strong>categories</strong>.</small>
+                    </div>
+                </ng-template>
+                <ng-template pTemplate="right">
+                    <button pButton pRipple label="Nova categoria" icon="pi pi-plus" (click)="openNew()"></button>
+                </ng-template>
+            </p-toolbar>
+
+            <p-table
+                [value]="categories"
+                [loading]="loading"
+                responsiveLayout="scroll"
+                styleClass="p-datatable-striped">
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th scope="col" style="width: 260px">Nome</th>
+                        <th scope="col">Descrição</th>
+                        <th scope="col" style="width: 280px">ID</th>
+                        <th scope="col" style="width: 120px">Ações</th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-category>
+                    <tr>
+                        <td class="font-bold">{{ category.name }}</td>
+                        <td>{{ category.description || '—' }}</td>
+                        <td><span class="category-id">{{ category.id }}</span></td>
+                        <td>
+                            <button pButton pRipple icon="pi pi-pencil" class="p-button-rounded p-button-success mr-2"
+                                (click)="editCategory(category)"></button>
+                            <button pButton pRipple icon="pi pi-trash" class="p-button-rounded p-button-danger"
+                                (click)="confirmDeleteCategory(category)"></button>
+                        </td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr>
+                        <td colspan="4">Nenhuma categoria cadastrada.</td>
+                    </tr>
+                </ng-template>
+            </p-table>
+        </div>
+    </div>
+</div>
+
+<p-dialog [(visible)]="categoryDialog" [style]="{ width: '520px' }" [modal]="true"
+    [header]="category.id ? 'Editar categoria' : 'Nova categoria'" class="p-fluid">
+    <ng-template pTemplate="content">
+        <div class="field">
+            <label for="name">Nome</label>
+            <input id="name" type="text" pInputText [(ngModel)]="category.name" required autofocus />
+            <small class="p-error" *ngIf="submitted && !category.name?.trim()">O nome é obrigatório.</small>
+        </div>
+
+        <div class="field">
+            <label for="description">Descrição</label>
+            <textarea id="description" pInputTextarea [(ngModel)]="category.description" rows="5"></textarea>
+        </div>
+    </ng-template>
+
+    <ng-template pTemplate="footer">
+        <button pButton pRipple label="Cancelar" icon="pi pi-times" class="p-button-text" (click)="hideDialog()"></button>
+        <button pButton pRipple label="Salvar" icon="pi pi-check" class="p-button-text" (click)="saveCategory()"></button>
+    </ng-template>
+</p-dialog>
+
+<p-dialog [(visible)]="deleteCategoryDialog" header="Confirmação" [modal]="true" [style]="{ width: '450px' }">
+    <div class="flex align-items-center justify-content-center">
+        <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem"></i>
+        <span *ngIf="category">Confirma exclusão da categoria <b>{{ category.name }}</b>?</span>
+    </div>
+    <ng-template pTemplate="footer">
+        <button pButton pRipple icon="pi pi-times" class="p-button-text" label="Não" (click)="deleteCategoryDialog = false"></button>
+        <button pButton pRipple icon="pi pi-check" class="p-button-text" label="Sim" (click)="deleteCategory()"></button>
+    </ng-template>
+</p-dialog>

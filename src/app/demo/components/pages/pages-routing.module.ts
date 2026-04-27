@@ -10,6 +10,7 @@ import { authGuard } from '../../service/auth.guard';
         { path: 'pergunta', canActivate: [authGuard], loadChildren: () => import('./pergunta-index/pergunta-index.module').then(m => m.PerguntaIndexModule)  },
         { path: 'autoavaliacoes', canActivate: [authGuard], loadChildren: () => import('./autoavaliacoes-index/autoavaliacoes-index.module').then(m => m.AutoavaliacoesIndexModule)  },
         { path: 'chat-histories', canActivate: [authGuard], loadChildren: () => import('./n8n-chat-histories-index/n8n-chat-histories-index.module').then(m => m.N8nChatHistoriesIndexModule) },
+        { path: 'media-categories', canActivate: [authGuard], loadChildren: () => import('./categories-index/categories-index.module').then(m => m.CategoriesIndexModule) },
         { path: 'resources', canActivate: [authGuard], loadChildren: () => import('./resources-index/resources-index.module').then(m => m.ResourcesIndexModule)  },
         { path: 'jogos-interativos', canActivate: [authGuard], loadChildren: () => import('./jogo-interativo-index/jogo-interativo-index.module').then(m => m.JogoInterativoIndexModule) },
         { path: 'termometro', canActivate: [authGuard], loadChildren: () => import('./termometro-index/termometro-index.module').then(m => m.TermometroIndexModule)  },

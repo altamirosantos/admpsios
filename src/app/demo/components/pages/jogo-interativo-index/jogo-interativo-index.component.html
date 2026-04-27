@@ -57,15 +57,15 @@
         <div class="card">
             <div class="flex flex-column md:flex-row md:align-items-center md:justify-content-between gap-3 mb-4">
                 <div>
-                    <h5 class="m-0">Perguntas do jogo</h5>
+                    <h5 class="m-0">Afirmações do jogo</h5>
                     <small class="text-color-secondary" *ngIf="selectedJogo; else semJogoSelecionado">
-                        Gerencie as perguntas vinculadas a <strong>{{ selectedJogo.titulo }}</strong>.
+                        Gerencie as afirmações vinculadas a <strong>{{ selectedJogo.titulo }}</strong>.
                     </small>
                     <ng-template #semJogoSelecionado>
-                        <small class="text-color-secondary">Selecione um jogo interativo para visualizar ou cadastrar perguntas.</small>
+                        <small class="text-color-secondary">Selecione um jogo interativo para visualizar ou cadastrar afirmações.</small>
                     </ng-template>
                 </div>
-                <button pButton pRipple label="Nova pergunta" icon="pi pi-plus" [disabled]="!selectedJogo" (click)="openNewQuestao()"></button>
+                <button pButton pRipple label="Nova afirmação" icon="pi pi-plus" [disabled]="!selectedJogo" (click)="openNewQuestao()"></button>
             </div>
 
             <p-table
@@ -75,7 +75,7 @@
                 styleClass="p-datatable-striped">
                 <ng-template pTemplate="header">
                     <tr>
-                        <th scope="col">Pergunta</th>
+                        <th scope="col">Afirmação</th>
                         <th scope="col" style="width: 240px">Opções</th>
                         <th scope="col" style="width: 220px">Resposta correta</th>
                         <th scope="col" style="width: 240px">Explicação</th>
@@ -106,7 +106,7 @@
                 <ng-template pTemplate="emptymessage">
                     <tr>
                         <td colspan="6">
-                            {{ selectedJogo ? 'Nenhuma pergunta cadastrada para este jogo.' : 'Selecione um jogo para carregar as perguntas.' }}
+                            {{ selectedJogo ? 'Nenhuma afirmação cadastrada para este jogo.' : 'Selecione um jogo para carregar as afirmações.' }}
                         </td>
                     </tr>
                 </ng-template>
@@ -138,12 +138,12 @@
 </p-dialog>
 
 <p-dialog [(visible)]="questaoDialog" [style]="{ width: '700px' }" [modal]="true"
-    [header]="questao.id ? 'Editar pergunta' : 'Nova pergunta'" class="p-fluid">
+    [header]="questao.id ? 'Editar afirmação' : 'Nova afirmação'" class="p-fluid">
     <ng-template pTemplate="content">
         <div class="field">
-            <label for="question">Pergunta</label>
+            <label for="question">Afirmação</label>
             <textarea id="question" pInputTextarea [(ngModel)]="questao.question" rows="4"></textarea>
-            <small class="p-error" *ngIf="submittedQuestao && !questao.question?.trim()">A pergunta é obrigatória.</small>
+            <small class="p-error" *ngIf="submittedQuestao && !questao.question?.trim()">A afirmação é obrigatória.</small>
         </div>
 
         <div class="field">
@@ -195,7 +195,7 @@
 <p-dialog [(visible)]="deleteQuestaoDialog" header="Confirmação" [modal]="true" [style]="{ width: '450px' }">
     <div class="flex align-items-center justify-content-center">
         <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem"></i>
-        <span *ngIf="selectedQuestao">Confirma exclusão da pergunta selecionada?</span>
+        <span *ngIf="selectedQuestao">Confirma exclusão da afirmação selecionada?</span>
     </div>
     <ng-template pTemplate="footer">
         <button pButton pRipple icon="pi pi-times" class="p-button-text" label="Não" (click)="deleteQuestaoDialog = false"></button>

@@ -1,6 +1,19 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { MessageService } from 'primeng/api';
-import { ResourcesService } from 'src/app/demo/service/resources.service';
+import { CategoriesService, MediaCategory } from 'src/app/demo/service/categories.service';
+import { ResourceItem, ResourcePayload, ResourcesService, ResourceType } from 'src/app/demo/service/resources.service';
+
+type ResourceForm = {
+    id?: string;
+    title: string;
+    description: string;
+    type: ResourceType;
+    url: string;
+    duration: number | null;
+    tagsText: string;
+    interactiveDataText: string;
+    categoryIds: string[];
+};
 
 @Component({
     selector: 'app-termometro-index',
@@ -9,164 +22,242 @@ import { ResourcesService } from 'src/app/demo/service/resources.service';
     styleUrl: './resources-index.component.scss',
     providers: [MessageService]
 })
-export class ResourcesIndexComponent {
-    autoavaliacoes: any[] = [];
+export class ResourcesIndexComponent implements OnInit {
+    resources: ResourceItem[] = [];
+    categories: MediaCategory[] = [];
+    resourceDialog = false;
+    deleteResourceDialog = false;
+    loading = false;
+    submitted = false;
+    selectedFile: File | null = null;
+    originalFileName = '';
 
-    perguntaDialog: boolean = false;
-    deleteItemDialog: boolean = false;
-    //respostaDialog: boolean = false;
+    readonly typeOptions: { label: string; value: ResourceType }[] = [
+        { label: 'Exercício', value: 'exercise' },
+        { label: 'Áudio', value: 'audio' },
+        { label: 'Vídeo', value: 'video' },
+        { label: 'Documento', value: 'document' }
+    ];
 
-    autoavaliacao: any = {};
-    //resposta: any = {};
+    resourceForm: ResourceForm = this.createEmptyResource();
 
-    selectedPergunta: any = null;
+    constructor(
+        private readonly messageService: MessageService,
+        private readonly resourcesService: ResourcesService,
+        private readonly categoriesService: CategoriesService
+    ) {}
 
-    loading: boolean = false;
-
-    loadingResp: boolean = false;
-
-    perguntaSelecionada: any = null;
-
-    onRowSelect(event: any) {
-        console.log("Linha selecionada:", event.data);
+    ngOnInit(): void {
+        void this.loadInitialData();
     }
-    onRowClick(event: any) {
-        console.log("Linha clkickada:", event.data);
-    }
-    constructor(private messageService: MessageService,
-        private resourcesService: ResourcesService) {
+
+    createEmptyResource(): ResourceForm {
+        return {
+            title: '',
+            description: '',
+            type: 'exercise',
+            url: '',
+            duration: null,
+            tagsText: '',
+            interactiveDataText: '',
+            categoryIds: []
+        };
     }
 
-    async ngOnInit() {
+    async loadInitialData(): Promise<void> {
         this.loading = true;
-        this.autoavaliacoes = await this.resourcesService.getAll();
-        console.log(this.autoavaliacoes);
-        this.loading = false;
+
+        try {
+            const [resources, categories] = await Promise.all([
+                this.resourcesService.getAll(),
+                this.categoriesService.getAll()
+            ]);
+
+            this.resources = resources;
+            this.categories = categories;
+        } catch (error) {
+            console.error('Erro ao carregar recursos:', error);
+            this.messageService.add({ severity: 'error', summary: 'Erro', detail: 'Não foi possível carregar os recursos.', life: 3000 });
+        } finally {
+            this.loading = false;
+        }
     }
 
-    saveTermometro() {
-        // this.modalDialog = false;
+    openNew(): void {
+        this.resourceForm = this.createEmptyResource();
+        this.selectedFile = null;
+        this.originalFileName = '';
+        this.submitted = false;
+        this.resourceDialog = true;
     }
 
-    hideDevolutivaDialog() {
-        this.perguntaDialog = false;
+    editResource(resource: ResourceItem): void {
+        this.resourceForm = {
+            id: resource.id,
+            title: resource.title,
+            description: resource.description || '',
+            type: resource.type,
+            url: resource.url || '',
+            duration: resource.duration,
+            tagsText: (resource.tags || []).join(', '),
+            interactiveDataText: resource.interactive_data ? JSON.stringify(resource.interactive_data, null, 2) : '',
+            categoryIds: resource.category_ids || []
+        };
+        this.selectedFile = null;
+        this.originalFileName = resource.url || '';
+        this.submitted = false;
+        this.resourceDialog = true;
     }
 
-    jsonParaTexto(obj: any, indent = 0): string {
-        const pad = ' '.repeat(indent);
-        const linhas: string[] = [];
+    hideDialog(): void {
+        this.resourceDialog = false;
+        this.selectedFile = null;
+        this.originalFileName = '';
+        this.submitted = false;
+    }
 
-        Object.entries(obj ?? {}).forEach(([chave, valor]) => {
-            const rotulo = this.labelizar(chave);
+    confirmDeleteResource(resource: ResourceItem): void {
+        this.resourceForm = {
+            id: resource.id,
+            title: resource.title,
+            description: resource.description || '',
+            type: resource.type,
+            url: resource.url || '',
+            duration: resource.duration,
+            tagsText: (resource.tags || []).join(', '),
+            interactiveDataText: resource.interactive_data ? JSON.stringify(resource.interactive_data, null, 2) : '',
+            categoryIds: resource.category_ids || []
+        };
+        this.selectedFile = null;
+        this.originalFileName = resource.url || '';
+        this.deleteResourceDialog = true;
+    }
 
-            if (valor === null || valor === undefined || valor === '') {
-                linhas.push(`${pad}${rotulo}: —`);
-            } else if (Array.isArray(valor)) {
-                if (valor.length === 0) {
-                    linhas.push(`${pad}${rotulo}: (vazio)`);
-                } else if (valor.every(v => typeof v !== 'object')) {
-                    // array de primitivos
-                    linhas.push(`${pad}${rotulo}: ${valor.join(', ')}`);
-                } else {
-                    // array com objetos
-                    linhas.push(`${pad}${rotulo}:`);
-                    valor.forEach((item, i) => {
-                        if (typeof item === 'object' && item !== null) {
-                            linhas.push(`${pad}- Item ${i + 1}:`);
-                            linhas.push(this.jsonParaTexto(item, indent + 2));
-                        } else {
-                            linhas.push(`${pad}- ${item}`);
-                        }
-                    });
-                }
-            } else if (typeof valor === 'object') {
-                // objeto aninhado
-                linhas.push(`${pad}${rotulo}:`);
-                linhas.push(this.jsonParaTexto(valor, indent + 2));
-            } else {
-                // primitivo
-                linhas.push(`${pad}${rotulo}: ${valor}`);
+    onFileSelected(event: Event): void {
+        const input = event.target as HTMLInputElement;
+        const file = input.files?.[0] || null;
+        this.selectedFile = file;
+
+        if (file) {
+            this.resourceForm.url = file.name;
+        }
+    }
+
+    clearSelectedFile(fileInput?: HTMLInputElement): void {
+        this.selectedFile = null;
+        this.resourceForm.url = this.originalFileName;
+
+        if (fileInput) {
+            fileInput.value = '';
+        }
+    }
+
+    get selectedFileLabel(): string {
+        return this.selectedFile?.name || 'Nenhum arquivo selecionado';
+    }
+
+    parseTags(tagsText: string): string[] {
+        return tagsText
+            .split(/\r?\n|,/) 
+            .map((item) => item.trim())
+            .filter((item) => !!item);
+    }
+
+    parseInteractiveData(interactiveDataText: string): Record<string, unknown> | null {
+        const normalizedText = interactiveDataText.trim();
+
+        if (!normalizedText) {
+            return null;
+        }
+
+        return JSON.parse(normalizedText) as Record<string, unknown>;
+    }
+
+    hasValidInteractiveData(): boolean {
+        try {
+            this.parseInteractiveData(this.resourceForm.interactiveDataText);
+            return true;
+        } catch (error) {
+            console.debug('interactive_data inválido:', error);
+            return false;
+        }
+    }
+
+    getCategoryNames(resource: ResourceItem): string {
+        return resource.category_names?.length ? resource.category_names.join(', ') : '—';
+    }
+
+    async saveResource(): Promise<void> {
+        this.submitted = true;
+
+        if (!this.resourceForm.title.trim() || !this.resourceForm.type || !this.hasValidInteractiveData()) {
+            return;
+        }
+
+        let payload: ResourcePayload;
+
+        try {
+            let nextFileName = this.resourceForm.url.trim() || null;
+
+            if (this.selectedFile) {
+                nextFileName = await this.resourcesService.uploadMediaFile(this.selectedFile, nextFileName);
             }
-        });
 
-        return linhas.join('\n');
+            payload = {
+                title: this.resourceForm.title.trim(),
+                description: this.resourceForm.description.trim() || null,
+                type: this.resourceForm.type,
+                url: nextFileName,
+                duration: this.resourceForm.duration ?? null,
+                tags: this.parseTags(this.resourceForm.tagsText),
+                interactive_data: this.parseInteractiveData(this.resourceForm.interactiveDataText)
+            };
+        } catch (error) {
+            console.error('interactive_data inválido ao salvar resource:', error);
+            this.messageService.add({ severity: 'error', summary: 'Erro', detail: 'O campo de dados interativos precisa conter um JSON válido.', life: 3000 });
+            return;
+        }
+
+        try {
+            if (this.resourceForm.id) {
+                await this.resourcesService.update(this.resourceForm.id, payload, this.resourceForm.categoryIds);
+                this.messageService.add({ severity: 'success', summary: 'Sucesso', detail: 'Resource atualizado.', life: 3000 });
+            } else {
+                await this.resourcesService.create(payload, this.resourceForm.categoryIds);
+                this.messageService.add({ severity: 'success', summary: 'Sucesso', detail: 'Resource criado.', life: 3000 });
+            }
+
+            this.resourceDialog = false;
+            this.resourceForm = this.createEmptyResource();
+            this.selectedFile = null;
+            this.originalFileName = '';
+            await this.loadInitialData();
+        } catch (error) {
+            console.error('Erro ao salvar resource:', error);
+            this.messageService.add({ severity: 'error', summary: 'Erro', detail: 'Não foi possível salvar o resource.', life: 3000 });
+        }
     }
 
-    // Transforma "dados_entrada", "camelCase" etc. em rótulos legíveis
-    private labelizar(chave: string): string {
-        const espacado = chave
-            .replace(/[_\-]+/g, ' ')
-            .replace(/([a-z])([A-Z])/g, '$1 $2')
-            .toLowerCase();
-        return espacado.charAt(0).toUpperCase() + espacado.slice(1);
-    }
+    async deleteResource(): Promise<void> {
+        if (!this.resourceForm.id) {
+            return;
+        }
 
-    // Getter para exibir no template
-    getTextoFormatado(text: any): string {
-        return this.jsonParaTexto(this.autoavaliacao.dados_entrada);
-    }
+        try {
+            if (this.resourceForm.url.trim()) {
+                await this.resourcesService.deleteMediaFile(this.resourceForm.url.trim());
+            }
 
-    async editDevolutiva(autoavaliacao) {
-        console.log('edit >> ', autoavaliacao);
-        this.autoavaliacao = autoavaliacao;
-        console.log(JSON.stringify(this.autoavaliacao.dados_entrada));
-        this.autoavaliacao.dados_entrada = await this.getTextoFormatado(this.autoavaliacao.dados_entrada);
-        this.perguntaDialog = true;
-    }
-
-    async selectPergunta(pergunta) {
-        this.loadingResp = true;
-        console.log('select >> ', pergunta);
-        //this.selectedPergunta = pergunta;
-        //  this.respostas = await this.respostasService.getByPerguntaId(pergunta.id);
-        // this.loadingResp = false;
-    }
-
-    addItem() {
-        /*    const a = [
-           'Ter mais pensamentos positivos',
-        'Reduzir a ansiedade e o estresse',
-        'Me sentir mais confiante',
-        'Ter mais equilíbrio nas emoções',
-        'Me sentir mais valorizado(a)'
-            ];
-            const perguntaID = 'eb8aa924-56ce-481b-93f1-60ae02b09515';
-            for (let i = 0; i < a.length; i++) {
-                this.respostasService.create({ descricao: a[i], devolutiva: null, pergunta_id: perguntaID });
-            }*/
-    }
-
-    editItem(item) {
-        console.log('edit item>> ', item)
-        // this.resposta = item;
-        // this.respostaDialog = true;
-    }
-
-    deleteItem(item: any) {
-        //  this.aconselhamento = item;
-        //  this.deleteItemDialog = true;
-
-    }
-
-    confirmDeleteItem() {
-        this.deleteItemDialog = false;
-    }
-
-    hideRespostaDialog() {
-        // this.respostaDialog = false;
-    }
-
-    saveResposta() {
-        // console.log('resposta >> ', this.resposta);
-        // this.respostasService.update(this.resposta.id, { devolutiva: this.resposta.devolutiva, sugestao: this.resposta.sugestao });
-        // this.respostaDialog = false;
-    }
-
-    onBasicUpload() {
-        this.messageService.add({ severity: 'info', summary: 'Success', detail: 'File Uploaded with Basic Mode' });
-    }
-
-    myUploader(event) {
-        console.log(event);
+            await this.resourcesService.delete(this.resourceForm.id);
+            this.messageService.add({ severity: 'success', summary: 'Sucesso', detail: 'Resource removido.', life: 3000 });
+            this.deleteResourceDialog = false;
+            this.resourceForm = this.createEmptyResource();
+            this.selectedFile = null;
+            this.originalFileName = '';
+            await this.loadInitialData();
+        } catch (error) {
+            console.error('Erro ao excluir resource:', error);
+            this.messageService.add({ severity: 'error', summary: 'Erro', detail: 'Não foi possível excluir o resource.', life: 3000 });
+        }
     }
 }

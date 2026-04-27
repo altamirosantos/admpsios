@@ -25,6 +25,7 @@ export class AppMenuComponent implements OnInit {
                     { label: 'Perguntas', icon: 'pi pi-fw pi-comments', routerLink: ['/pages/pergunta'] },
                     { label: 'Autoavaliações', icon: 'pi pi-fw pi-check-square', routerLink: ['/pages/autoavaliacoes'] },
                     { label: 'Histórico de Chat', icon: 'pi pi-fw pi-comment', routerLink: ['/pages/chat-histories'] },
+                    { label: 'Categorias de Mídia', icon: 'pi pi-fw pi-tags', routerLink: ['/pages/media-categories'] },
                     { label: 'Jogos Interativos', icon: 'pi pi-fw pi-play', routerLink: ['/pages/jogos-interativos'] },
                     { label: 'Resources', icon: 'pi pi-fw pi-folder-open', routerLink: ['/pages/resources'] },
                     //{ label: 'Termometro', icon: 'pi pi-fw pi-id-card', routerLink: ['/pages/termometro'] },

@@ -1,66 +1,160 @@
+<p-toast></p-toast>
+
 <div class="grid">
-
-
     <div class="col-12">
         <div class="card">
-            <h5>Resources</h5>
+            <p-toolbar styleClass="mb-4">
+                <ng-template pTemplate="left">
+                    <div>
+                        <h5 class="m-0">Resources</h5>
+                        <small class="text-color-secondary">CRUD da tabela <strong>resources</strong> com vínculo em <strong>resource_categories</strong>.</small>
+                    </div>
+                </ng-template>
+                <ng-template pTemplate="right">
+                    <button pButton pRipple label="Novo resource" icon="pi pi-plus" (click)="openNew()"></button>
+                </ng-template>
+            </p-toolbar>
 
-            <p-table [value]="autoavaliacoes" scrollDirection="both" [loading]="loading" selectionMode="single"
-                [(selection)]="perguntaSelecionada" [scrollable]="true" scrollHeight="400px"
-                styleClass="p-datatable-striped clickable-rows mt-3" responsiveLayout="scroll"
-                (onRowClick)="onRowClick($event)">
+            <p-table
+                [value]="resources"
+                [loading]="loading"
+                responsiveLayout="scroll"
+                styleClass="p-datatable-striped">
                 <ng-template pTemplate="header">
                     <tr>
-                        <th style="width:100px" pFrozenColumn>Titulo</th>
-                        <th style="width:100px" pFrozenColumn>Tipo</th>
-                        <th style="width:100px" pFrozenColumn>Descrição</th>
-                        <th style="width:100px" pFrozenColumn>Tags</th>
-                        <th style="width:100px" pFrozenColumn>Data</th>
-                        <!--th style="width:200px">Devolutiva</th-->
-                        <!--th style="width:200px">OP</th-->
-
+                        <th scope="col" style="width: 220px">Título</th>
+                        <th scope="col" style="width: 120px">Tipo</th>
+                        <th scope="col">Descrição</th>
+                        <th scope="col" style="width: 180px">Categorias</th>
+                        <th scope="col" style="width: 160px">Tags</th>
+                        <th scope="col" style="width: 120px">Duração</th>
+                        <th scope="col" style="width: 180px">Criado em</th>
+                        <th scope="col" style="width: 120px">Ações</th>
                     </tr>
                 </ng-template>
-                <ng-template pTemplate="body" let-autoavaliacao let-rowIndex="rowIndex">
-                    <tr (click)="selectPergunta(autoavaliacao)" [pSelectableRow]="autoavaliacao">
-                        <td style="width:100px" pFrozenColumn class="font-bold">{{autoavaliacao.title}}</td>
-                        <td style="width:100px" pFrozenColumn class="font-bold">{{autoavaliacao.type}}</td>
-                        <td style="width:100px" pFrozenColumn class="font-bold">{{autoavaliacao.description}}</td>
-                        <td style="width:100px" pFrozenColumn class="font-bold">{{autoavaliacao.tags}}</td>
-                        <td style="width:100px" pFrozenColumn class="font-bold">{{autoavaliacao.created_at | date:
-                            'dd/MM/yyyy HH:mm'}}</td>
-                        <!--td style="width:200px" pFrozenColumn class="font-bold">{{autoavaliacao.diagnostico}}</td-->
-                        <td style="width:200px">
-                            <button pButton pRipple icon="pi pi-eye" class="p-button-rounded p-button-success mr-2"
-                                (click)="editDevolutiva(autoavaliacao)"></button>
-                            <!--button pButton pRipple type="button" icon="pi pi-trash" class="p-button-rounded p-button-text" (click)="()"></button></td-->
+                <ng-template pTemplate="body" let-resource>
+                    <tr>
+                        <td class="font-bold">{{ resource.title }}</td>
+                        <td><span class="resource-type">{{ resource.type }}</span></td>
+                        <td>{{ resource.description || '—' }}</td>
+                        <td>{{ getCategoryNames(resource) }}</td>
+                        <td>{{ resource.tags?.length ? resource.tags.join(', ') : '—' }}</td>
+                        <td>{{ resource.duration ?? '—' }}</td>
+                        <td>{{ resource.created_at | date: 'dd/MM/yyyy HH:mm' }}</td>
+                        <td>
+                            <button pButton pRipple icon="pi pi-pencil" class="p-button-rounded p-button-success mr-2"
+                                (click)="editResource(resource)"></button>
+                            <button pButton pRipple icon="pi pi-trash" class="p-button-rounded p-button-danger"
+                                (click)="confirmDeleteResource(resource)"></button>
+                        </td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr>
+                        <td colspan="8">Nenhum resource cadastrado.</td>
                     </tr>
                 </ng-template>
             </p-table>
         </div>
-        <p-dialog [(visible)]="perguntaDialog" [style]="{width: '750px'}" header="Painel de Autoavaliação"
-            [modal]="true" class="p-fluid">
-            <ng-template pTemplate="content">
-
-                <div class="field">
-                    <label for="description">Perguntas</label>
-                    <textarea id="description" pInputTextarea [(ngModel)]="autoavaliacao.dados_entrada" required
-                        rows="10" cols="50"></textarea>
-                </div>
-                <div class="field">
-                    <label for="description">Devolutiva</label>
-                    <textarea id="description" pInputTextarea [(ngModel)]="autoavaliacao.diagnostico" required rows="25"
-                        cols="50"></textarea>
-                </div>
-
-            </ng-template>
-
-            <ng-template pTemplate="footer">
-                <button pButton pRipple label="Fechar" icon="pi pi-times" class="p-button-text"
-                    (click)="hideDevolutivaDialog()"></button>
-                <!--button pButton pRipple label="Save" icon="pi pi-check" class="p-button-text"
-                    (click)="saveTermometro()"></button-->
-            </ng-template>
-        </p-dialog>
     </div>
 </div>
+
+<p-dialog [(visible)]="resourceDialog" [style]="{ width: '760px' }" [modal]="true"
+    [header]="resourceForm.id ? 'Editar resource' : 'Novo resource'" class="p-fluid">
+    <ng-template pTemplate="content">
+        <div class="grid formgrid">
+            <div class="field col-12 md:col-8">
+                <label for="title">Título</label>
+                <input id="title" type="text" pInputText [(ngModel)]="resourceForm.title" required autofocus />
+                <small class="p-error" *ngIf="submitted && !resourceForm.title.trim()">O título é obrigatório.</small>
+            </div>
+
+            <div class="field col-12 md:col-4">
+                <label for="type">Tipo</label>
+                <p-dropdown
+                    inputId="type"
+                    [options]="typeOptions"
+                    [(ngModel)]="resourceForm.type"
+                    optionLabel="label"
+                    optionValue="value"
+                    placeholder="Selecione o tipo">
+                </p-dropdown>
+            </div>
+
+            <div class="field col-12">
+                <label for="description">Descrição</label>
+                <textarea id="description" pInputTextarea [(ngModel)]="resourceForm.description" rows="4"></textarea>
+            </div>
+
+            <div class="field col-12 md:col-4">
+                <label for="duration">Duração</label>
+                <p-inputNumber inputId="duration" [(ngModel)]="resourceForm.duration" [min]="0"></p-inputNumber>
+            </div>
+
+            <div class="field col-12 resource-file-group">
+                <label>Arquivo no Storage</label>
+                <div class="grid formgrid resource-file-grid">
+                    <div class="field col-12 md:col-7 mb-0">
+                        <label for="url">Nome do arquivo no bucket</label>
+                        <input id="url" type="text" pInputText [(ngModel)]="resourceForm.url" [readonly]="true" />
+                    </div>
+
+                    <div class="field col-12 md:col-5 mb-0">
+                        <label for="resourceFile">Escolher arquivo para envio</label>
+                        <input #resourceFileInput id="resourceFile" type="file" class="resource-file-input" (change)="onFileSelected($event)" />
+                    </div>
+                </div>
+
+                <div class="resource-file-row">
+                    <span class="resource-file-name">{{ selectedFileLabel }}</span>
+                    <button *ngIf="selectedFile" pButton pRipple type="button" label="Remover arquivo" icon="pi pi-times"
+                        class="p-button-text p-button-sm" (click)="clearSelectedFile(resourceFileInput)"></button>
+                </div>
+                <small class="text-color-secondary">Esse valor corresponde ao nome do arquivo salvo no bucket <strong>psios_midias</strong>. Selecione um arquivo para enviar ou substituir o conteúdo atual.</small>
+            </div>
+
+            <div class="field col-12 md:col-6">
+                <label for="tagsText">Tags</label>
+                <textarea id="tagsText" pInputTextarea [(ngModel)]="resourceForm.tagsText" rows="4"></textarea>
+                <small class="text-color-secondary">Informe tags separadas por vírgula ou quebra de linha.</small>
+            </div>
+
+            <div class="field col-12 md:col-6">
+                <label for="categoryIds">Categorias</label>
+                <p-multiSelect
+                    inputId="categoryIds"
+                    [options]="categories"
+                    [(ngModel)]="resourceForm.categoryIds"
+                    optionLabel="name"
+                    optionValue="id"
+                    placeholder="Selecione as categorias"
+                    display="chip">
+                </p-multiSelect>
+                <small class="text-color-secondary">Os vínculos serão salvos na tabela <strong>resource_categories</strong>.</small>
+            </div>
+
+            <div class="field col-12">
+                <label for="interactiveDataText">Dados interativos (JSON)</label>
+                <textarea id="interactiveDataText" pInputTextarea [(ngModel)]="resourceForm.interactiveDataText" rows="10"></textarea>
+                <small class="text-color-secondary">Use JSON válido. Exemplo: <span>{{ '{' }}"nivel":1,"modo":"guiado"{{ '}' }}</span></small>
+                <small class="p-error block" *ngIf="submitted && !hasValidInteractiveData()">Informe um JSON válido ou deixe o campo vazio.</small>
+            </div>
+        </div>
+    </ng-template>
+
+    <ng-template pTemplate="footer">
+        <button pButton pRipple label="Cancelar" icon="pi pi-times" class="p-button-text" (click)="hideDialog()"></button>
+        <button pButton pRipple label="Salvar" icon="pi pi-check" class="p-button-text" (click)="saveResource()"></button>
+    </ng-template>
+</p-dialog>
+
+<p-dialog [(visible)]="deleteResourceDialog" header="Confirmação" [modal]="true" [style]="{ width: '450px' }">
+    <div class="flex align-items-center justify-content-center">
+        <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem"></i>
+        <span *ngIf="resourceForm">Confirma exclusão do resource <b>{{ resourceForm.title }}</b>?</span>
+    </div>
+    <ng-template pTemplate="footer">
+        <button pButton pRipple icon="pi pi-times" class="p-button-text" label="Não" (click)="deleteResourceDialog = false"></button>
+        <button pButton pRipple icon="pi pi-check" class="p-button-text" label="Sim" (click)="deleteResource()"></button>
+    </ng-template>
+</p-dialog>
