@@ -27,6 +27,7 @@
                     <tr>
                         <th scope="col" style="width: 120px">Nome</th>
                         <th scope="col">Título</th>
+                        <th scope="col">Mensagem</th>
                         <th scope="col" style="width: 180px">Criado em</th>
                         <th scope="col" style="width: 120px">Ações</th>
                     </tr>
@@ -35,6 +36,7 @@
                     <tr [pSelectableRow]="jogo" tabindex="0" (click)="selectJogo(jogo)" (keydown)="onJogoRowKeydown($event, jogo)">
                         <td class="font-bold">{{ jogo.nome }}</td>
                         <td>{{ jogo.titulo }}</td>
+                        <td>{{ jogo.mensagem || '—' }}</td>
                         <td>{{ jogo.created_at | date: 'dd/MM/yyyy HH:mm' }}</td>
                         <td>
                             <button pButton pRipple icon="pi pi-pencil" class="p-button-rounded p-button-success mr-2"
@@ -46,7 +48,7 @@
                 </ng-template>
                 <ng-template pTemplate="emptymessage">
                     <tr>
-                        <td colspan="4">Nenhum jogo interativo cadastrado.</td>
+                        <td colspan="5">Nenhum jogo interativo cadastrado.</td>
                     </tr>
                 </ng-template>
             </p-table>
@@ -87,10 +89,10 @@
                     <tr>
                         <td>{{ questao.question }}</td>
                         <td>
-                            <div class="options-preview">{{ questao.options.join('\n') }}</div>
+                            <div class="options-preview">{{ getOptionsPreview(questao) }}</div>
                         </td>
                         <td>
-                            <strong>{{ questao.correct_answer }}</strong>
+                            <strong>{{ getCorrectAnswerLabel(questao) }}</strong>
                             <div class="text-color-secondary mt-1">{{ getCorrectAnswerLabel(questao) }}</div>
                         </td>
                         <td>{{ questao.explanation || '—' }}</td>
@@ -129,6 +131,12 @@
             <input id="titulo" type="text" pInputText [(ngModel)]="jogo.titulo" required />
             <small class="p-error" *ngIf="submittedJogo && !jogo.titulo?.trim()">O título é obrigatório.</small>
         </div>
+
+        <div class="field">
+            <label for="mensagem">Mensagem</label>
+            <textarea id="mensagem" pInputTextarea [(ngModel)]="jogo.mensagem" rows="4"></textarea>
+            <small class="text-color-secondary">Mensagem exibida no jogo para este cadastro pai.</small>
+        </div>
     </ng-template>
 
     <ng-template pTemplate="footer">
@@ -147,20 +155,41 @@
         </div>
 
         <div class="field">
-            <label for="optionsText">Opções</label>
-            <textarea id="optionsText" pInputTextarea [(ngModel)]="questao.optionsText" rows="6"></textarea>
-            <small class="text-color-secondary">Informe uma opção por linha. São necessárias pelo menos 2 opções.</small>
-            <small class="p-error block" *ngIf="submittedQuestao && parseOptions(questao.optionsText || '').length < 2">
+            <div class="flex align-items-center justify-content-between gap-2 mb-2">
+                <span class="font-medium">Opções</span>
+                <button pButton pRipple type="button" label="Adicionar opção" icon="pi pi-plus" class="p-button-text p-button-sm" (click)="addOption()"></button>
+            </div>
+            <div class="options-editor">
+                <div class="option-row" *ngFor="let option of questao.optionsForm; let i = index">
+                    <button
+                        pButton
+                        pRipple
+                        type="button"
+                        [label]="option.isCorrect ? 'Correta' : 'Marcar correta'"
+                        [class]="option.isCorrect ? 'p-button-success p-button-sm' : 'p-button-outlined p-button-secondary p-button-sm'"
+                        (click)="setCorrectOption(i)"></button>
+                    <input
+                        type="text"
+                        pInputText
+                        [(ngModel)]="option.text"
+                        [ngModelOptions]="{ standalone: true }"
+                        [placeholder]="'Opção ' + (i + 1)" />
+                    <button
+                        pButton
+                        pRipple
+                        type="button"
+                        icon="pi pi-trash"
+                        class="p-button-text p-button-danger p-button-sm"
+                        [disabled]="questao.optionsForm.length <= 2"
+                        (click)="removeOption(i)"></button>
+                </div>
+            </div>
+            <small class="text-color-secondary">Cadastre pelo menos 2 alternativas e marque exatamente uma como correta.</small>
+            <small class="p-error block" *ngIf="submittedQuestao && getValidOptions(questao.optionsForm || []).length < 2">
                 Informe pelo menos 2 opções válidas.
             </small>
-        </div>
-
-        <div class="field">
-            <label for="correctAnswer">Índice da resposta correta</label>
-            <p-inputNumber inputId="correctAnswer" [(ngModel)]="questao.correct_answer" [min]="0" [showButtons]="true"></p-inputNumber>
-            <small class="text-color-secondary">Use índice baseado em zero: 0 para a primeira opção, 1 para a segunda e assim por diante.</small>
-            <small class="p-error block" *ngIf="submittedQuestao && (questao.correct_answer === undefined || questao.correct_answer === null || questao.correct_answer < 0 || questao.correct_answer >= parseOptions(questao.optionsText || '').length)">
-                Informe um índice válido para a resposta correta.
+            <small class="p-error block" *ngIf="submittedQuestao && !hasValidCorrectOption(questao.optionsForm || [])">
+                Marque uma alternativa correta.
             </small>
         </div>
 

@@ -1,0 +1,146 @@
+<p-toast></p-toast>
+
+<div class="grid">
+    <div class="col-12">
+        <div class="card">
+            <p-toolbar styleClass="mb-4">
+                <ng-template pTemplate="left">
+                    <div>
+                        <h5 class="m-0">Edições</h5>
+                        <small class="text-color-secondary">CRUD da tabela <strong>edicao</strong>.</small>
+                    </div>
+                </ng-template>
+                <ng-template pTemplate="right">
+                    <button pButton pRipple label="Nova edição" icon="pi pi-plus" (click)="openNew()"></button>
+                </ng-template>
+            </p-toolbar>
+
+            <p-table
+                [value]="edicoes"
+                [loading]="loading"
+                responsiveLayout="scroll"
+                styleClass="p-datatable-striped">
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th scope="col" style="width: 220px">Título</th>
+                        <th scope="col" style="width: 140px">Tipo</th>
+                        <th scope="col">Sinopse</th>
+                        <th scope="col" style="width: 190px">Criado em</th>
+                        <th scope="col" style="width: 190px">Atualizado em</th>
+                        <th scope="col" style="width: 120px">Ações</th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-edicao>
+                    <tr>
+                        <td class="font-bold">{{ edicao.titulo }}</td>
+                        <td>{{ edicao.tipo }}</td>
+                        <td>{{ edicao.sinopse || '—' }}</td>
+                        <td>{{ edicao.created_at | date: 'dd/MM/yyyy HH:mm' }}</td>
+                        <td>{{ edicao.updated_at | date: 'dd/MM/yyyy HH:mm' }}</td>
+                        <td>
+                            <button pButton pRipple icon="pi pi-pencil" class="p-button-rounded p-button-success mr-2"
+                                (click)="editEdicao(edicao)"></button>
+                            <button pButton pRipple icon="pi pi-trash" class="p-button-rounded p-button-danger"
+                                (click)="confirmDeleteEdicao(edicao)"></button>
+                        </td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr>
+                        <td colspan="6">Nenhum registro de edição cadastrado.</td>
+                    </tr>
+                </ng-template>
+            </p-table>
+        </div>
+    </div>
+</div>
+
+<p-dialog [(visible)]="edicaoDialog" [style]="{ width: '1100px' }" [modal]="true"
+    [header]="edicao.id ? 'Editar edição' : 'Nova edição'" class="p-fluid">
+    <ng-template pTemplate="content">
+        <div class="grid formgrid">
+            <div class="field col-12 md:col-8">
+                <label for="titulo">Título</label>
+                <input id="titulo" type="text" pInputText [(ngModel)]="edicao.titulo" required autofocus />
+                <small class="p-error" *ngIf="submitted && !edicao.titulo?.trim()">O título é obrigatório.</small>
+            </div>
+
+            <div class="field col-12 md:col-4">
+                <label for="tipo">Tipo</label>
+                <p-dropdown
+                    inputId="tipo"
+                    [options]="tipoOptions"
+                    [(ngModel)]="edicao.tipo"
+                    optionLabel="label"
+                    optionValue="value"
+                    placeholder="Selecione o tipo">
+                </p-dropdown>
+                <small class="p-error" *ngIf="submitted && !edicao.tipo?.trim()">O tipo é obrigatório.</small>
+            </div>
+
+            <div class="field col-12">
+                <label for="sinopse">Sinopse</label>
+                <textarea id="sinopse" pInputTextarea [(ngModel)]="edicao.sinopse" rows="6" class="edicao-textarea edicao-textarea-md"></textarea>
+            </div>
+
+            <div class="field col-12">
+                <div class="flex align-items-center justify-content-between gap-2 mb-2">
+                    <label for="texto_original" class="mb-0">Texto original</label>
+                    <button
+                        pButton
+                        pRipple
+                        type="button"
+                        label="Corrigir"
+                        icon="pi pi-sparkles"
+                        class="p-button-outlined"
+                        [loading]="corrigindoTexto"
+                        [disabled]="corrigindoTexto"
+                        (click)="corrigirTexto()"></button>
+                </div>
+                <textarea id="texto_original" pInputTextarea [(ngModel)]="edicao.texto_original" rows="14" class="edicao-textarea edicao-textarea-xl"></textarea>
+                <small class="text-color-secondary">A correção envia o tipo selecionado e o texto original para a Edge Function <strong>corrige-texto-edicao</strong>.</small>
+            </div>
+
+            <div class="field col-12">
+                <label for="texto_corrigido">Texto corrigido</label>
+                <textarea id="texto_corrigido" pInputTextarea [(ngModel)]="edicao.texto_corrigido" rows="14" class="edicao-textarea edicao-textarea-xl"></textarea>
+            </div>
+
+            <div class="field col-12 md:col-6">
+                <label for="sugestoes">Sugestões</label>
+                <textarea id="sugestoes" pInputTextarea [(ngModel)]="edicao.sugestoes" rows="10" class="edicao-textarea edicao-textarea-lg"></textarea>
+            </div>
+
+            <div class="field col-12 md:col-6">
+                <label for="ajustes">Ajustes</label>
+                <textarea id="ajustes" pInputTextarea [(ngModel)]="edicao.ajustes" rows="10" class="edicao-textarea edicao-textarea-lg"></textarea>
+            </div>
+
+            <div class="field col-12 md:col-6" *ngIf="edicao.created_at">
+                <label for="created_at">Criado em</label>
+                <input id="created_at" type="text" pInputText [ngModel]="(edicao.created_at | date: 'dd/MM/yyyy HH:mm:ss') || ''" [readonly]="true" />
+            </div>
+
+            <div class="field col-12 md:col-6" *ngIf="edicao.updated_at">
+                <label for="updated_at">Atualizado em</label>
+                <input id="updated_at" type="text" pInputText [ngModel]="(edicao.updated_at | date: 'dd/MM/yyyy HH:mm:ss') || ''" [readonly]="true" />
+            </div>
+        </div>
+    </ng-template>
+
+    <ng-template pTemplate="footer">
+        <button pButton pRipple label="Cancelar" icon="pi pi-times" class="p-button-text" (click)="hideDialog()"></button>
+        <button pButton pRipple label="Salvar" icon="pi pi-check" class="p-button-text" (click)="saveEdicao()"></button>
+    </ng-template>
+</p-dialog>
+
+<p-dialog [(visible)]="deleteEdicaoDialog" header="Confirmação" [modal]="true" [style]="{ width: '450px' }">
+    <div class="flex align-items-center justify-content-center">
+        <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem"></i>
+        <span *ngIf="edicao">Confirma exclusão da edição <b>{{ edicao.titulo }}</b>?</span>
+    </div>
+    <ng-template pTemplate="footer">
+        <button pButton pRipple icon="pi pi-times" class="p-button-text" label="Não" (click)="deleteEdicaoDialog = false"></button>
+        <button pButton pRipple icon="pi pi-check" class="p-button-text" label="Sim" (click)="deleteEdicao()"></button>
+    </ng-template>
+</p-dialog>

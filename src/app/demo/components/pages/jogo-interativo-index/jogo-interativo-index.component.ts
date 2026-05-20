@@ -3,11 +3,14 @@ import { MessageService } from 'primeng/api';
 import {
     JogoInterativo,
     JogoInterativoService,
-    QuestaoInterativa
+    QuestaoInterativa,
+    QuestaoInterativaOpcao
 } from 'src/app/demo/service/jogo-interativo.service';
 
-type QuestaoForm = Partial<QuestaoInterativa> & {
-    optionsText: string;
+type QuestaoOpcaoForm = Required<QuestaoInterativaOpcao>;
+
+type QuestaoForm = Omit<Partial<QuestaoInterativa>, 'options'> & {
+    optionsForm: QuestaoOpcaoForm[];
 };
 
 @Component({
@@ -55,18 +58,31 @@ export class JogoInterativoIndexComponent implements OnInit {
     createEmptyJogo(): JogoInterativo {
         return {
             nome: '',
-            titulo: ''
+            titulo: '',
+            mensagem: ''
         };
     }
 
     createEmptyQuestao(): QuestaoForm {
         return {
             question: '',
-            optionsText: '',
+            optionsForm: [this.createEmptyOption(true), this.createEmptyOption(false)],
             correct_answer: 0,
             explanation: '',
             insight: ''
         };
+    }
+
+    createEmptyOption(isCorrect = false): QuestaoOpcaoForm {
+        return {
+            id: this.generateOptionId(),
+            text: '',
+            isCorrect
+        };
+    }
+
+    generateOptionId(): string {
+        return `option-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     }
 
     async loadJogos(selectedId?: number): Promise<void> {
@@ -150,13 +166,15 @@ export class JogoInterativoIndexComponent implements OnInit {
             if (this.jogo.id) {
                 savedJogo = await this.jogoInterativoService.updateJogo(this.jogo.id, {
                     nome: this.jogo.nome.trim(),
-                    titulo: this.jogo.titulo.trim()
+                    titulo: this.jogo.titulo.trim(),
+                    mensagem: this.jogo.mensagem?.trim() || null
                 });
                 this.messageService.add({ severity: 'success', summary: 'Sucesso', detail: 'Jogo interativo atualizado.', life: 3000 });
             } else {
                 savedJogo = await this.jogoInterativoService.createJogo({
                     nome: this.jogo.nome.trim(),
-                    titulo: this.jogo.titulo.trim()
+                    titulo: this.jogo.titulo.trim(),
+                    mensagem: this.jogo.mensagem?.trim() || null
                 });
                 this.messageService.add({ severity: 'success', summary: 'Sucesso', detail: 'Jogo interativo criado.', life: 3000 });
             }
@@ -213,9 +231,14 @@ export class JogoInterativoIndexComponent implements OnInit {
     }
 
     editQuestao(questao: QuestaoInterativa): void {
+        const normalizedCorrectAnswer = this.normalizeCorrectAnswer(questao.correct_answer, questao.options || []);
         this.questao = {
             ...questao,
-            optionsText: (questao.options || []).join('\n')
+            correct_answer: normalizedCorrectAnswer,
+            optionsForm: this.mapOptionsToForm({
+                ...questao,
+                correct_answer: normalizedCorrectAnswer
+            })
         };
         this.submittedQuestao = false;
         this.questaoDialog = true;
@@ -226,15 +249,139 @@ export class JogoInterativoIndexComponent implements OnInit {
         this.submittedQuestao = false;
     }
 
-    parseOptions(optionsText: string): string[] {
-        return optionsText
-            .split('\n')
-            .map((item) => item.trim())
-            .filter((item) => !!item);
+    mapOptionsToForm(questao: Pick<QuestaoInterativa, 'options' | 'correct_answer'>): QuestaoOpcaoForm[] {
+        const normalizedOptions = (questao.options || [])
+            .map((option, index) => {
+                if (typeof option === 'string') {
+                    const parsedOption = this.parseSerializedOption(option);
+                    if (parsedOption) {
+                        return {
+                            id: parsedOption.id || this.generateOptionId(),
+                            text: parsedOption.text,
+                            isCorrect: questao.correct_answer === index
+                        };
+                    }
+
+                    return {
+                        id: this.generateOptionId(),
+                        text: option,
+                        isCorrect: questao.correct_answer === index
+                    };
+                }
+
+                return {
+                    id: option.id || this.generateOptionId(),
+                    text: option.text || '',
+                    isCorrect: questao.correct_answer === index
+                };
+            })
+            .filter((option) => option.text.trim().length > 0);
+
+        if (normalizedOptions.length < 2) {
+            return [this.createEmptyOption(true), this.createEmptyOption(false)];
+        }
+
+        if (questao.correct_answer < 0 || questao.correct_answer >= normalizedOptions.length) {
+            normalizedOptions[0].isCorrect = true;
+        }
+
+        return normalizedOptions;
+    }
+
+    normalizeCorrectAnswer(correctAnswer: number | undefined, options: Array<string | QuestaoInterativaOpcao>): number {
+        const normalizedCorrectAnswer = Number(correctAnswer);
+        if (Number.isNaN(normalizedCorrectAnswer) || normalizedCorrectAnswer < 0 || normalizedCorrectAnswer >= options.length) {
+            return 0;
+        }
+
+        return normalizedCorrectAnswer;
+    }
+
+    parseSerializedOption(option: string): QuestaoInterativaOpcao | null {
+        const trimmedOption = option.trim();
+        if (!trimmedOption.startsWith('{')) {
+            return null;
+        }
+
+        try {
+            const parsedOption = JSON.parse(trimmedOption) as Partial<QuestaoInterativaOpcao>;
+            if (typeof parsedOption.text !== 'string' || !parsedOption.text.trim().length) {
+                return null;
+            }
+
+            return {
+                id: parsedOption.id,
+                text: parsedOption.text,
+                isCorrect: false
+            };
+        } catch {
+            return null;
+        }
     }
 
     getCorrectAnswerLabel(questao: QuestaoInterativa): string {
-        return questao.options?.[questao.correct_answer] || 'Índice inválido';
+        const fallbackOption = questao.options?.[questao.correct_answer];
+        if (typeof fallbackOption === 'string') {
+            return fallbackOption;
+        }
+
+        return fallbackOption?.text || 'Alternativa inválida';
+    }
+
+    getOptionsPreview(questao: QuestaoInterativa): string {
+        return (questao.options || [])
+            .map((option) => (typeof option === 'string' ? option : option.text))
+            .filter((option) => option?.trim().length)
+            .join('\n');
+    }
+
+    addOption(): void {
+        this.questao.optionsForm = [...(this.questao.optionsForm || []), this.createEmptyOption(false)];
+    }
+
+    removeOption(index: number): void {
+        const optionsForm = [...(this.questao.optionsForm || [])];
+        if (optionsForm.length <= 2) {
+            return;
+        }
+
+        const [removedOption] = optionsForm.splice(index, 1);
+        if (removedOption && this.questao.correct_answer !== undefined && this.questao.correct_answer !== null) {
+            if (this.questao.correct_answer === index) {
+                this.questao.correct_answer = 0;
+            } else if (this.questao.correct_answer > index) {
+                this.questao.correct_answer -= 1;
+            }
+        }
+
+        this.questao.optionsForm = optionsForm.map((option, optionIndex) => ({
+            ...option,
+            isCorrect: optionIndex === (this.questao.correct_answer ?? 0)
+        }));
+    }
+
+    setCorrectOption(index: number): void {
+        this.questao.correct_answer = index;
+        this.questao.optionsForm = (this.questao.optionsForm || []).map((option, optionIndex) => ({
+            ...option,
+            isCorrect: optionIndex === index
+        }));
+    }
+
+    getValidOptions(optionsForm: QuestaoOpcaoForm[]): QuestaoOpcaoForm[] {
+        return (optionsForm || [])
+            .map((option) => ({
+                ...option,
+                text: option.text.trim(),
+                id: option.id || this.generateOptionId()
+            }))
+            .filter((option) => option.text.length > 0);
+    }
+
+    hasValidCorrectOption(optionsForm: QuestaoOpcaoForm[]): boolean {
+        const validOptions = this.getValidOptions(optionsForm);
+        const correctAnswer = Number(this.questao.correct_answer);
+        return !Number.isNaN(correctAnswer) && correctAnswer >= 0 && correctAnswer < validOptions.length;
     }
 
     async saveQuestao(): Promise<void> {
@@ -244,7 +391,7 @@ export class JogoInterativoIndexComponent implements OnInit {
             return;
         }
 
-        const options = this.parseOptions(this.questao.optionsText || '');
+        const options = this.getValidOptions(this.questao.optionsForm || []);
         const correctAnswer = Number(this.questao.correct_answer);
 
         if (!this.questao.question?.trim() || options.length < 2 || Number.isNaN(correctAnswer) || correctAnswer < 0 || correctAnswer >= options.length) {
@@ -254,7 +401,7 @@ export class JogoInterativoIndexComponent implements OnInit {
         const payload: QuestaoInterativa = {
             jogo_interativo_id: this.selectedJogo.id,
             question: this.questao.question.trim(),
-            options,
+            options: options.map((option) => option.text),
             correct_answer: correctAnswer,
             explanation: this.questao.explanation?.trim() || null,
             insight: this.questao.insight?.trim() || null

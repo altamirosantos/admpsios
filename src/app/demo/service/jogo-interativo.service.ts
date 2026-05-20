@@ -5,14 +5,21 @@ export interface JogoInterativo {
   id?: number;
   nome: string;
   titulo: string;
+  mensagem?: string | null;
   created_at?: string;
+}
+
+export interface QuestaoInterativaOpcao {
+  id?: string;
+  text: string;
+  isCorrect: boolean;
 }
 
 export interface QuestaoInterativa {
   id?: number;
   jogo_interativo_id: number;
   question: string;
-  options: string[];
+  options: Array<string | QuestaoInterativaOpcao>;
   correct_answer: number;
   explanation?: string | null;
   insight?: string | null;

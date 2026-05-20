@@ -1,3 +1,22 @@
 .options-preview {
     white-space: pre-line;
 }
+
+.options-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.option-row {
+    display: grid;
+    grid-template-columns: 9rem minmax(0, 1fr) auto;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+@media screen and (max-width: 768px) {
+    .option-row {
+        grid-template-columns: 1fr;
+    }
+}

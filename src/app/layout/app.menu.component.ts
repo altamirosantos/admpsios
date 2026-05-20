@@ -22,6 +22,7 @@ export class AppMenuComponent implements OnInit {
             {
                 label: 'Sistema',
                 items: [
+                    { label: 'Edições', icon: 'pi pi-fw pi-file-edit', routerLink: ['/pages/edicoes'] },
                     { label: 'Perguntas', icon: 'pi pi-fw pi-comments', routerLink: ['/pages/pergunta'] },
                     { label: 'Autoavaliações', icon: 'pi pi-fw pi-check-square', routerLink: ['/pages/autoavaliacoes'] },
                     { label: 'Histórico de Chat', icon: 'pi pi-fw pi-comment', routerLink: ['/pages/chat-histories'] },
