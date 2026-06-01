@@ -10,6 +10,7 @@ import { RippleModule } from 'primeng/ripple';
 import { TableModule } from 'primeng/table';
 import { ToastModule } from 'primeng/toast';
 import { ToolbarModule } from 'primeng/toolbar';
+import { TooltipModule } from 'primeng/tooltip';
 import { EdicaoIndexRoutingModule } from './edicao-index-routing.module';
 import { EdicaoIndexComponent } from './edicao-index.component';
 
@@ -22,6 +23,7 @@ import { EdicaoIndexComponent } from './edicao-index.component';
         ButtonModule,
         RippleModule,
         ToastModule,
+        TooltipModule,
         ToolbarModule,
         DropdownModule,
         InputTextModule,

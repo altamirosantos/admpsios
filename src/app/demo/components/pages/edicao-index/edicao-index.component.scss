@@ -3,6 +3,25 @@
     resize: vertical;
 }
 
+:host ::ng-deep .p-datatable .edicao-has-resource > td {
+    background: #eefbf3;
+}
+
+:host ::ng-deep .p-datatable .edicao-has-resource > td:first-child {
+    box-shadow: inset 4px 0 0 #22c55e;
+}
+
+.edicao-resource-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.6rem;
+    border-radius: 9999px;
+    background: #dcfce7;
+    color: #166534;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
 .edicao-textarea-md {
     min-height: 10rem;
 }

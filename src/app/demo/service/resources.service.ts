@@ -198,6 +198,24 @@ export class ResourcesService {
     }
   }
 
+  async getMediaFileUrl(fileName: string): Promise<string> {
+    const normalizedFileName = fileName.trim();
+
+    if (!normalizedFileName) {
+      throw new Error('Arquivo de mídia não informado.');
+    }
+
+    const { data, error } = await this.supabaseService.client.storage
+      .from(this.mediaBucket)
+      .createSignedUrl(normalizedFileName, 60 * 60);
+
+    if (error || !data?.signedUrl) {
+      throw error || new Error('Não foi possível gerar a URL da mídia.');
+    }
+
+    return data.signedUrl;
+  }
+
   private async syncCategories(resourceId: string, categoryIds: string[]): Promise<void> {
     const deleteResult = await this.supabaseService['supabase']
       .from(this.relationTable)

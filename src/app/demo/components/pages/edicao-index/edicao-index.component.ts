@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { MessageService } from 'primeng/api';
 import { EdicaoItem, EdicaoPayload, EdicaoService } from 'src/app/demo/service/edicao.service';
+import { ResourceItem, ResourcesService } from 'src/app/demo/service/resources.service';
 
 @Component({
     selector: 'app-edicao-index',
@@ -10,6 +11,7 @@ import { EdicaoItem, EdicaoPayload, EdicaoService } from 'src/app/demo/service/e
 })
 export class EdicaoIndexComponent implements OnInit {
     edicoes: EdicaoItem[] = [];
+    resources: ResourceItem[] = [];
     edicaoDialog = false;
     deleteEdicaoDialog = false;
     loading = false;
@@ -25,23 +27,46 @@ export class EdicaoIndexComponent implements OnInit {
 
     constructor(
         private readonly messageService: MessageService,
-        private readonly edicaoService: EdicaoService
+        private readonly edicaoService: EdicaoService,
+        private readonly resourcesService: ResourcesService
     ) {}
 
     ngOnInit(): void {
-        void this.loadEdicoes();
+        void this.loadInitialData();
     }
 
     createEmptyEdicao(): EdicaoItem {
         return {
             titulo: '',
             sinopse: '',
+            roteiro: '',
             tipo: '',
             texto_original: '',
             texto_corrigido: '',
             sugestoes: '',
-            ajustes: ''
+            ajustes: '',
+            resource_id: null,
+            resource: null
         };
+    }
+
+    async loadInitialData(): Promise<void> {
+        this.loading = true;
+
+        try {
+            const [edicoes, resources] = await Promise.all([
+                this.edicaoService.getAll(),
+                this.resourcesService.getAll()
+            ]);
+
+            this.edicoes = edicoes;
+            this.resources = resources;
+        } catch (error) {
+            console.error('Erro ao carregar dados de edição:', error);
+            this.messageService.add({ severity: 'error', summary: 'Erro', detail: 'Não foi possível carregar os registros de edição.', life: 3000 });
+        } finally {
+            this.loading = false;
+        }
     }
 
     async loadEdicoes(): Promise<void> {
@@ -67,11 +92,14 @@ export class EdicaoIndexComponent implements OnInit {
         this.edicao = {
             ...edicao,
             sinopse: edicao.sinopse || '',
+            roteiro: edicao.roteiro || '',
             tipo: edicao.tipo || '',
             texto_original: edicao.texto_original || '',
             texto_corrigido: edicao.texto_corrigido || '',
             sugestoes: edicao.sugestoes || '',
-            ajustes: edicao.ajustes || ''
+            ajustes: edicao.ajustes || '',
+            resource_id: edicao.resource_id || null,
+            resource: edicao.resource || null
         };
         this.submitted = false;
         this.edicaoDialog = true;
@@ -91,17 +119,69 @@ export class EdicaoIndexComponent implements OnInit {
         return {
             titulo: this.edicao.titulo.trim(),
             sinopse: this.normalizeOptionalText(this.edicao.sinopse),
+            roteiro: this.normalizeOptionalText(this.edicao.roteiro),
             tipo: this.edicao.tipo.trim(),
             texto_original: this.normalizeOptionalText(this.edicao.texto_original),
             texto_corrigido: this.normalizeOptionalText(this.edicao.texto_corrigido),
             sugestoes: this.normalizeOptionalText(this.edicao.sugestoes),
-            ajustes: this.normalizeOptionalText(this.edicao.ajustes)
+            ajustes: this.normalizeOptionalText(this.edicao.ajustes),
+            resource_id: this.edicao.resource_id || null
         };
     }
 
     normalizeOptionalText(value: string | null | undefined): string | null {
         const normalized = value?.trim() || '';
         return normalized.length ? normalized : null;
+    }
+
+    hasAssociatedResource(edicao: EdicaoItem): boolean {
+        return !!edicao.resource_id;
+    }
+
+    canExecuteMedia(edicao: EdicaoItem): boolean {
+        return !!edicao.resource?.url?.trim();
+    }
+
+    getMediaActionIcon(edicao: EdicaoItem): string {
+        switch (edicao.resource?.type) {
+            case 'audio':
+            case 'video':
+                return 'pi pi-play';
+            case 'document':
+                return 'pi pi-file';
+            default:
+                return 'pi pi-external-link';
+        }
+    }
+
+    getMediaActionLabel(edicao: EdicaoItem): string {
+        switch (edicao.resource?.type) {
+            case 'audio':
+                return 'Ouvir';
+            case 'video':
+                return 'Assistir';
+            case 'document':
+                return 'Abrir PDF';
+            default:
+                return 'Abrir mídia';
+        }
+    }
+
+    async executarMidia(edicao: EdicaoItem): Promise<void> {
+        const fileName = edicao.resource?.url?.trim();
+
+        if (!fileName) {
+            this.messageService.add({ severity: 'warn', summary: 'Atenção', detail: 'A edição não possui um arquivo de mídia associado.', life: 3000 });
+            return;
+        }
+
+        try {
+            const mediaUrl = await this.resourcesService.getMediaFileUrl(fileName);
+            window.open(mediaUrl, '_blank', 'noopener');
+        } catch (error) {
+            console.error('Erro ao abrir mídia da edição:', error);
+            this.messageService.add({ severity: 'error', summary: 'Erro', detail: 'Não foi possível abrir a mídia associada.', life: 3000 });
+        }
     }
 
     generateSessionId(): string {
@@ -112,14 +192,25 @@ export class EdicaoIndexComponent implements OnInit {
         return `sessao-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
     }
 
-    async corrigirTexto(): Promise<void> {
+    async corrigirTexto(acao: 'EDICAO' | 'ROTEIRO' = 'EDICAO'): Promise<void> {
+        const textoBase = acao === 'ROTEIRO'
+            ? this.edicao.texto_corrigido?.trim()
+            : this.edicao.texto_original?.trim();
+
         if (!this.edicao.tipo?.trim()) {
-            this.messageService.add({ severity: 'warn', summary: 'Atenção', detail: 'Selecione o tipo antes de corrigir o texto.', life: 3000 });
+            this.messageService.add({ severity: 'warn', summary: 'Atenção', detail: 'Selecione o tipo antes de processar o texto.', life: 3000 });
             return;
         }
 
-        if (!this.edicao.texto_original?.trim()) {
-            this.messageService.add({ severity: 'warn', summary: 'Atenção', detail: 'Informe o texto original antes de solicitar a correção.', life: 3000 });
+        if (!textoBase) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Atenção',
+                detail: acao === 'ROTEIRO'
+                    ? 'Informe o texto corrigido antes de gerar o roteiro.'
+                    : 'Informe o texto original antes de solicitar a correção.',
+                life: 3000
+            });
             return;
         }
 
@@ -128,18 +219,38 @@ export class EdicaoIndexComponent implements OnInit {
         try {
             const output = await this.edicaoService.corrigirTexto(
                 this.edicao.tipo.trim(),
-                this.edicao.texto_original.trim(),
+                textoBase,
+                acao,
                 this.generateSessionId()
             );
 
-            this.edicao.texto_corrigido = output['texto-corrigido'] || '';
-            this.edicao.sugestoes = output['sugestoes-de-melhoria'] || '';
-            this.edicao.ajustes = output['ajustes-realizados'] || '';
+            if (acao === 'ROTEIRO') {
+                this.edicao.roteiro = typeof output === 'string' ? output : output['texto-corrigido'] || '';
+            } else {
+                this.edicao.texto_corrigido = typeof output === 'string' ? output : output['texto-corrigido'] || '';
+            }
 
-            this.messageService.add({ severity: 'success', summary: 'Sucesso', detail: 'Texto corrigido com sucesso.', life: 3000 });
+            if (typeof output !== 'string') {
+                this.edicao.sugestoes = output['sugestoes-de-melhoria'] || '';
+                this.edicao.ajustes = output['ajustes-realizados'] || '';
+            }
+
+            this.messageService.add({
+                severity: 'success',
+                summary: 'Sucesso',
+                detail: acao === 'ROTEIRO' ? 'Roteiro gerado com sucesso.' : 'Texto corrigido com sucesso.',
+                life: 3000
+            });
         } catch (error) {
             console.error('Erro ao corrigir texto da edição:', error);
-            this.messageService.add({ severity: 'error', summary: 'Erro', detail: 'Não foi possível corrigir o texto pela Edge Function.', life: 3000 });
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Erro',
+                detail: acao === 'ROTEIRO'
+                    ? 'Não foi possível gerar o roteiro pela Edge Function.'
+                    : 'Não foi possível corrigir o texto pela Edge Function.',
+                life: 3000
+            });
         } finally {
             this.corrigindoTexto = false;
         }

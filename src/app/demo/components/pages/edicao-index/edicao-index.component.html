@@ -24,20 +24,37 @@
                     <tr>
                         <th scope="col" style="width: 220px">Título</th>
                         <th scope="col" style="width: 140px">Tipo</th>
+                        <th scope="col" style="width: 220px">Mídia associada</th>
                         <th scope="col">Sinopse</th>
                         <th scope="col" style="width: 190px">Criado em</th>
                         <th scope="col" style="width: 190px">Atualizado em</th>
-                        <th scope="col" style="width: 120px">Ações</th>
+                        <th scope="col" style="width: 210px">Ações</th>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-edicao>
-                    <tr>
+                    <tr [ngClass]="{ 'edicao-has-resource': hasAssociatedResource(edicao) }">
                         <td class="font-bold">{{ edicao.titulo }}</td>
                         <td>{{ edicao.tipo }}</td>
+                        <td>
+                            <span class="edicao-resource-badge" *ngIf="edicao.resource?.title; else semMidia">
+                                {{ edicao.resource?.title }}
+                            </span>
+                            <ng-template #semMidia>—</ng-template>
+                        </td>
                         <td>{{ edicao.sinopse || '—' }}</td>
                         <td>{{ edicao.created_at | date: 'dd/MM/yyyy HH:mm' }}</td>
                         <td>{{ edicao.updated_at | date: 'dd/MM/yyyy HH:mm' }}</td>
                         <td>
+                            <button
+                                *ngIf="canExecuteMedia(edicao)"
+                                pButton
+                                pRipple
+                                [icon]="getMediaActionIcon(edicao)"
+                                class="p-button-rounded p-button-info mr-2"
+                                [attr.aria-label]="getMediaActionLabel(edicao)"
+                                [pTooltip]="getMediaActionLabel(edicao)"
+                                tooltipPosition="top"
+                                (click)="executarMidia(edicao)"></button>
                             <button pButton pRipple icon="pi pi-pencil" class="p-button-rounded p-button-success mr-2"
                                 (click)="editEdicao(edicao)"></button>
                             <button pButton pRipple icon="pi pi-trash" class="p-button-rounded p-button-danger"
@@ -47,7 +64,7 @@
                 </ng-template>
                 <ng-template pTemplate="emptymessage">
                     <tr>
-                        <td colspan="6">Nenhum registro de edição cadastrado.</td>
+                        <td colspan="7">Nenhum registro de edição cadastrado.</td>
                     </tr>
                 </ng-template>
             </p-table>
@@ -78,25 +95,29 @@
                 <small class="p-error" *ngIf="submitted && !edicao.tipo?.trim()">O tipo é obrigatório.</small>
             </div>
 
+            <div class="field col-12 md:col-6">
+                <label for="resource_id">Mídia associada</label>
+                <p-dropdown
+                    inputId="resource_id"
+                    [options]="resources"
+                    [(ngModel)]="edicao.resource_id"
+                    optionLabel="title"
+                    optionValue="id"
+                    placeholder="Nenhuma mídia associada"
+                    [showClear]="true"
+                    [filter]="true"
+                    filterBy="title">
+                </p-dropdown>
+                <small class="text-color-secondary">O vínculo é opcional e pode ser definido depois.</small>
+            </div>
+
             <div class="field col-12">
                 <label for="sinopse">Sinopse</label>
                 <textarea id="sinopse" pInputTextarea [(ngModel)]="edicao.sinopse" rows="6" class="edicao-textarea edicao-textarea-md"></textarea>
             </div>
 
             <div class="field col-12">
-                <div class="flex align-items-center justify-content-between gap-2 mb-2">
-                    <label for="texto_original" class="mb-0">Texto original</label>
-                    <button
-                        pButton
-                        pRipple
-                        type="button"
-                        label="Corrigir"
-                        icon="pi pi-sparkles"
-                        class="p-button-outlined"
-                        [loading]="corrigindoTexto"
-                        [disabled]="corrigindoTexto"
-                        (click)="corrigirTexto()"></button>
-                </div>
+                <label for="texto_original">Texto original</label>
                 <textarea id="texto_original" pInputTextarea [(ngModel)]="edicao.texto_original" rows="14" class="edicao-textarea edicao-textarea-xl"></textarea>
                 <small class="text-color-secondary">A correção envia o tipo selecionado e o texto original para a Edge Function <strong>corrige-texto-edicao</strong>.</small>
             </div>
@@ -104,6 +125,11 @@
             <div class="field col-12">
                 <label for="texto_corrigido">Texto corrigido</label>
                 <textarea id="texto_corrigido" pInputTextarea [(ngModel)]="edicao.texto_corrigido" rows="14" class="edicao-textarea edicao-textarea-xl"></textarea>
+            </div>
+
+            <div class="field col-12">
+                <label for="roteiro">Roteiro</label>
+                <textarea id="roteiro" pInputTextarea [(ngModel)]="edicao.roteiro" rows="14" class="edicao-textarea edicao-textarea-xl"></textarea>
             </div>
 
             <div class="field col-12 md:col-6">
@@ -129,6 +155,8 @@
     </ng-template>
 
     <ng-template pTemplate="footer">
+        <button pButton pRipple type="button" label="Corrigir Texto Original" icon="pi pi-sparkles" class="p-button-outlined" [loading]="corrigindoTexto" [disabled]="corrigindoTexto" (click)="corrigirTexto('EDICAO')"></button>
+        <button pButton pRipple type="button" label="Gerar Roteiro" icon="pi pi-file-edit" class="p-button-outlined" [loading]="corrigindoTexto" [disabled]="corrigindoTexto" (click)="corrigirTexto('ROTEIRO')"></button>
         <button pButton pRipple label="Cancelar" icon="pi pi-times" class="p-button-text" (click)="hideDialog()"></button>
         <button pButton pRipple label="Salvar" icon="pi pi-check" class="p-button-text" (click)="saveEdicao()"></button>
     </ng-template>
