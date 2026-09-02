@@ -8,14 +8,20 @@ import {
     type EditorConfig,
     Essentials,
     FontColor,
+    FontSize,
+    GeneralHtmlSupport,
     Heading,
+    HtmlComment,
     Indent,
     Italic,
     Link,
     List,
     Paragraph,
     RemoveFormat,
+    SourceEditing,
     Table,
+    TableCellProperties,
+    TableProperties,
     TableToolbar,
     Underline
 } from 'ckeditor5';
@@ -68,6 +74,7 @@ export class ModeloPropostaIndexComponent implements OnInit {
             Italic,
             Underline,
             FontColor,
+            FontSize,
             Link,
             List,
             Indent,
@@ -75,14 +82,20 @@ export class ModeloPropostaIndexComponent implements OnInit {
             Alignment,
             Table,
             TableToolbar,
+            TableProperties,
+            TableCellProperties,
             Autoformat,
-            RemoveFormat
+            RemoveFormat,
+            SourceEditing,
+            GeneralHtmlSupport,
+            HtmlComment
         ],
         toolbar: {
             items: [
-                'undo', 'redo',
+                'sourceEditing',
+                '|', 'undo', 'redo',
                 '|', 'heading',
-                '|', 'bold', 'italic', 'underline', 'fontColor',
+                '|', 'bold', 'italic', 'underline', 'fontColor', 'fontSize',
                 '|', 'link', 'blockQuote', 'insertTable',
                 '|', 'bulletedList', 'numberedList', 'outdent', 'indent',
                 '|', 'alignment',
@@ -91,9 +104,20 @@ export class ModeloPropostaIndexComponent implements OnInit {
             shouldNotGroupWhenFull: true
         },
         table: {
-            contentToolbar: ['tableColumn', 'tableRow', 'mergeTableCells']
+            contentToolbar: ['tableColumn', 'tableRow', 'mergeTableCells', 'tableProperties', 'tableCellProperties']
         },
-        placeholder: 'Escreva o conteúdo da proposta. Use os parâmetros ${chave} para valores dinâmicos.'
+        // Permite manter tags/atributos/estilos arbitrários do HTML importado (ex.: divs, classes, style inline).
+        htmlSupport: {
+            allow: [
+                {
+                    name: /.*/,
+                    attributes: true,
+                    classes: true,
+                    styles: true
+                }
+            ]
+        },
+        placeholder: 'Escreva ou cole o HTML da proposta. Use os parâmetros ${chave} para valores dinâmicos.'
     };
 
     readonly statusOptions: StatusOption[] = MODELO_PROPOSTA_STATUS.map((status) => ({
@@ -110,6 +134,10 @@ export class ModeloPropostaIndexComponent implements OnInit {
 
     /** Instância ativa do CKEditor, usada para inserir chaves na posição do cursor. */
     private editorInstance: ClassicEditor | null = null;
+
+    /** Estado do diálogo de importação de HTML pronto. */
+    importarHtmlDialog = false;
+    htmlImportado = '';
 
     constructor(
         private readonly messageService: MessageService,
@@ -194,6 +222,29 @@ export class ModeloPropostaIndexComponent implements OnInit {
 
     onEditorReady(editor: ClassicEditor): void {
         this.editorInstance = editor;
+    }
+
+    // --- Importação de HTML pronto ---
+
+    openImportarHtml(): void {
+        // pré-carrega com o conteúdo atual para facilitar ajustes
+        this.htmlImportado = this.modelo.content || '';
+        this.importarHtmlDialog = true;
+    }
+
+    /** Substitui o conteúdo do editor pelo HTML colado no diálogo de importação. */
+    aplicarHtmlImportado(): void {
+        const html = this.htmlImportado ?? '';
+
+        if (this.editorInstance) {
+            this.editorInstance.setData(html);
+            this.modelo.content = this.editorInstance.getData();
+        } else {
+            this.modelo.content = html;
+        }
+
+        this.importarHtmlDialog = false;
+        this.messageService.add({ severity: 'success', summary: 'HTML importado', detail: 'O conteúdo foi carregado no editor.', life: 2500 });
     }
 
     insertChave(param: ParametroSchema): void {

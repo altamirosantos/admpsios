@@ -6,6 +6,7 @@ import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { DropdownModule } from 'primeng/dropdown';
 import { InputTextModule } from 'primeng/inputtext';
+import { InputTextareaModule } from 'primeng/inputtextarea';
 import { RippleModule } from 'primeng/ripple';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
@@ -26,6 +27,7 @@ import { ModeloPropostaIndexComponent } from './modelo-proposta-index.component'
         ToastModule,
         ToolbarModule,
         InputTextModule,
+        InputTextareaModule,
         DropdownModule,
         DialogModule,
         TagModule,

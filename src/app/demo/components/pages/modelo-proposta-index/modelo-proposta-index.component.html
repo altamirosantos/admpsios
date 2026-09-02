@@ -106,13 +106,19 @@
 
             <!-- Coluna: editor de conteúdo -->
             <div class="col-12 lg:col-7">
-                <label class="font-semibold block mb-2">Conteúdo (HTML)</label>
+                <div class="flex align-items-center justify-content-between mb-2">
+                    <label class="font-semibold m-0">Conteúdo (HTML)</label>
+                    <button pButton pRipple type="button" label="Importar HTML" icon="pi pi-code"
+                        class="p-button-outlined p-button-sm" (click)="openImportarHtml()"></button>
+                </div>
                 <div class="ckeditor-wrapper">
                     <ckeditor [editor]="Editor" [config]="editorConfig" [(ngModel)]="modelo.content"
                         (ready)="onEditorReady($event)"></ckeditor>
                 </div>
                 <small class="text-color-secondary block mt-2">
                     Use o botão <i class="pi pi-arrow-right"></i> ao lado de cada parâmetro para inserir a chave na posição do cursor.
+                    Para colar um HTML pronto, use <strong>Importar HTML</strong> ou o botão de código-fonte
+                    (<i class="pi pi-code"></i>) na barra do editor.
                 </small>
             </div>
         </div>
@@ -121,6 +127,22 @@
     <ng-template pTemplate="footer">
         <button pButton pRipple label="Cancelar" icon="pi pi-times" class="p-button-text" (click)="hideDialog()"></button>
         <button pButton pRipple label="Salvar" icon="pi pi-check" class="p-button-text" (click)="saveModelo()"></button>
+    </ng-template>
+</p-dialog>
+
+<p-dialog [(visible)]="importarHtmlDialog" [style]="{ width: '760px' }" [modal]="true"
+    header="Importar HTML" class="p-fluid" [maximizable]="true">
+    <ng-template pTemplate="content">
+        <small class="text-color-secondary block mb-2">
+            Cole aqui o HTML do seu modelo. Ao aplicar, o conteúdo substituirá o que está no editor.
+            Você pode usar os parâmetros no formato <code>{{ '$' }}{{ '{chave}' }}</code>.
+        </small>
+        <textarea pInputTextarea [(ngModel)]="htmlImportado" rows="16" class="html-source"
+            placeholder="<div>...seu HTML...</div>"></textarea>
+    </ng-template>
+    <ng-template pTemplate="footer">
+        <button pButton pRipple label="Cancelar" icon="pi pi-times" class="p-button-text" (click)="importarHtmlDialog = false"></button>
+        <button pButton pRipple label="Aplicar no editor" icon="pi pi-check" class="p-button-text" (click)="aplicarHtmlImportado()"></button>
     </ng-template>
 </p-dialog>
 
