@@ -1,0 +1,38 @@
+:host ::ng-deep {
+    .p-dropdown,
+    .p-calendar,
+    .p-inputnumber {
+        width: 100%;
+    }
+}
+
+.parametros-box {
+    margin-top: 0.5rem;
+    padding: 1rem;
+    border: 1px solid var(--surface-200);
+    border-radius: 8px;
+    background: var(--surface-50);
+}
+
+.chave-hint {
+    margin-left: 0.35rem;
+    font-family: monospace;
+    font-size: 0.75rem;
+    color: var(--text-color-secondary);
+}
+
+.servicos-box {
+    padding: 1rem;
+    border: 1px solid var(--surface-200);
+    border-radius: 8px;
+    background: var(--surface-50);
+}
+
+.servico-row {
+    padding: 0.25rem 0.5rem;
+    border-bottom: 1px dashed var(--surface-200);
+
+    &:last-of-type {
+        border-bottom: none;
+    }
+}

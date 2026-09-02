@@ -30,6 +30,7 @@
                             "src/assets"
                         ],
                         "styles": [
+                            "node_modules/ckeditor5/dist/ckeditor5.css",
                             "src/styles.scss"
                         ],
                         "scripts": []
@@ -94,6 +95,7 @@
                             "src/assets"
                         ],
                         "styles": [
+                            "node_modules/ckeditor5/dist/ckeditor5.css",
                             "src/styles.scss"
                         ],
                         "scripts": []

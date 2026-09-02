@@ -14,6 +14,11 @@ import { authGuard } from '../../service/auth.guard';
         { path: 'media-categories', canActivate: [authGuard], loadChildren: () => import('./categories-index/categories-index.module').then(m => m.CategoriesIndexModule) },
         { path: 'resources', canActivate: [authGuard], loadChildren: () => import('./resources-index/resources-index.module').then(m => m.ResourcesIndexModule)  },
         { path: 'jogos-interativos', canActivate: [authGuard], loadChildren: () => import('./jogo-interativo-index/jogo-interativo-index.module').then(m => m.JogoInterativoIndexModule) },
+        { path: 'empresas', canActivate: [authGuard], loadChildren: () => import('./empresa-index/empresa-index.module').then(m => m.EmpresaIndexModule) },
+        { path: 'filiais', canActivate: [authGuard], loadChildren: () => import('./filial-index/filial-index.module').then(m => m.FilialIndexModule) },
+        { path: 'modelos-proposta', canActivate: [authGuard], loadChildren: () => import('./modelo-proposta-index/modelo-proposta-index.module').then(m => m.ModeloPropostaIndexModule) },
+        { path: 'servicos-proposta', canActivate: [authGuard], loadChildren: () => import('./servicos-proposta-index/servicos-proposta-index.module').then(m => m.ServicosPropostaIndexModule) },
+        { path: 'propostas', canActivate: [authGuard], loadChildren: () => import('./proposta-empresa-index/proposta-empresa-index.module').then(m => m.PropostaEmpresaIndexModule) },
         { path: 'termometro', canActivate: [authGuard], loadChildren: () => import('./termometro-index/termometro-index.module').then(m => m.TermometroIndexModule)  },
         { path: '**', redirectTo: '/notfound' },
 

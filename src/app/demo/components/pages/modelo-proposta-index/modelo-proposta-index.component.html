@@ -1,0 +1,136 @@
+<p-toast></p-toast>
+
+<div class="grid">
+    <div class="col-12">
+        <div class="card">
+            <p-toolbar styleClass="mb-4">
+                <ng-template pTemplate="left">
+                    <div>
+                        <h5 class="m-0">Modelos de Proposta</h5>
+                        <small class="text-color-secondary">Cadastro da tabela <strong>modelo_proposta</strong>.</small>
+                    </div>
+                </ng-template>
+                <ng-template pTemplate="right">
+                    <button pButton pRipple label="Novo modelo" icon="pi pi-plus" (click)="openNew()"></button>
+                </ng-template>
+            </p-toolbar>
+
+            <p-table
+                [value]="modelos"
+                [loading]="loading"
+                [paginator]="modelos.length > 10"
+                [rows]="10"
+                responsiveLayout="scroll"
+                styleClass="p-datatable-striped">
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th scope="col">Prévia do conteúdo</th>
+                        <th scope="col" style="width: 140px">Status</th>
+                        <th scope="col" style="width: 140px">Parâmetros</th>
+                        <th scope="col" style="width: 170px">Atualizado em</th>
+                        <th scope="col" style="width: 120px">Ações</th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-modelo>
+                    <tr>
+                        <td class="font-bold">{{ stripHtmlPreview(modelo.content) }}</td>
+                        <td>
+                            <p-tag [value]="statusLabel(modelo.status)" [severity]="statusSeverity(modelo.status)"></p-tag>
+                        </td>
+                        <td>{{ modelo.parametros_schema.length }} chave(s)</td>
+                        <td>{{ modelo.updated_at ? (modelo.updated_at | date: 'dd/MM/yyyy HH:mm') : '—' }}</td>
+                        <td>
+                            <button pButton pRipple icon="pi pi-pencil" class="p-button-rounded p-button-success mr-2"
+                                (click)="editModelo(modelo)" pTooltip="Editar"></button>
+                            <button pButton pRipple icon="pi pi-trash" class="p-button-rounded p-button-danger"
+                                (click)="confirmDeleteModelo(modelo)" pTooltip="Excluir"></button>
+                        </td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr>
+                        <td colspan="5">Nenhum modelo de proposta cadastrado.</td>
+                    </tr>
+                </ng-template>
+            </p-table>
+        </div>
+    </div>
+</div>
+
+<p-dialog [(visible)]="modeloDialog" [style]="{ width: '900px' }" [modal]="true" [maximizable]="true"
+    [header]="modelo.id ? 'Editar modelo de proposta' : 'Novo modelo de proposta'" class="p-fluid">
+    <ng-template pTemplate="content">
+        <div class="grid">
+            <!-- Coluna: parâmetros -->
+            <div class="col-12 lg:col-5">
+                <div class="flex align-items-center justify-content-between mb-2">
+                    <label class="font-semibold m-0">Parâmetros do conteúdo</label>
+                    <p-dropdown [options]="statusOptions" [(ngModel)]="modelo.status" optionLabel="label"
+                        optionValue="value" styleClass="w-8rem" appendTo="body"></p-dropdown>
+                </div>
+                <small class="text-color-secondary block mb-3">
+                    Defina as chaves usadas no conteúdo no formato <code>&#36;&#123;chave&#125;</code>.
+                </small>
+
+                <div class="parametros-list">
+                    <div class="parametro-row" *ngFor="let param of modelo.parametros_schema; let i = index">
+                        <div class="grid formgrid align-items-start">
+                            <div class="col-12 md:col-5 field mb-2">
+                                <input type="text" pInputText [(ngModel)]="param.chave" (ngModelChange)="onChaveChange(param)"
+                                    placeholder="chave" [ngClass]="{ 'ng-invalid ng-dirty': submitted && !param.chave?.trim() }" />
+                            </div>
+                            <div class="col-12 md:col-4 field mb-2">
+                                <input type="text" pInputText [(ngModel)]="param.label" placeholder="Rótulo" />
+                            </div>
+                            <div class="col-8 md:col-2 field mb-2">
+                                <p-dropdown [options]="tipoOptions" [(ngModel)]="param.tipo" optionLabel="label"
+                                    optionValue="value" appendTo="body"></p-dropdown>
+                            </div>
+                            <div class="col-4 md:col-1 field mb-2 flex gap-1">
+                                <button pButton pRipple type="button" icon="pi pi-arrow-right"
+                                    class="p-button-rounded p-button-text p-button-sm" pTooltip="Inserir no conteúdo"
+                                    (click)="insertChave(param)" [disabled]="!param.chave?.trim()"></button>
+                                <button pButton pRipple type="button" icon="pi pi-times"
+                                    class="p-button-rounded p-button-text p-button-danger p-button-sm" pTooltip="Remover"
+                                    (click)="removeParametro(i)"></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button pButton pRipple type="button" label="Adicionar parâmetro" icon="pi pi-plus"
+                    class="p-button-outlined p-button-sm mt-2" (click)="addParametro()"></button>
+
+                <small class="p-error block mt-2" *ngIf="submitted && hasDuplicateKeys()">Há chaves duplicadas.</small>
+            </div>
+
+            <!-- Coluna: editor de conteúdo -->
+            <div class="col-12 lg:col-7">
+                <label class="font-semibold block mb-2">Conteúdo (HTML)</label>
+                <div class="ckeditor-wrapper">
+                    <ckeditor [editor]="Editor" [config]="editorConfig" [(ngModel)]="modelo.content"
+                        (ready)="onEditorReady($event)"></ckeditor>
+                </div>
+                <small class="text-color-secondary block mt-2">
+                    Use o botão <i class="pi pi-arrow-right"></i> ao lado de cada parâmetro para inserir a chave na posição do cursor.
+                </small>
+            </div>
+        </div>
+    </ng-template>
+
+    <ng-template pTemplate="footer">
+        <button pButton pRipple label="Cancelar" icon="pi pi-times" class="p-button-text" (click)="hideDialog()"></button>
+        <button pButton pRipple label="Salvar" icon="pi pi-check" class="p-button-text" (click)="saveModelo()"></button>
+    </ng-template>
+</p-dialog>
+
+<p-dialog [(visible)]="deleteModeloDialog" header="Confirmação" [modal]="true" [style]="{ width: '450px' }">
+    <div class="flex align-items-center justify-content-center">
+        <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem"></i>
+        <span *ngIf="modelo">Confirma exclusão deste modelo de proposta (<b>{{ statusLabel(modelo.status) }}</b>)?</span>
+    </div>
+    <ng-template pTemplate="footer">
+        <button pButton pRipple icon="pi pi-times" class="p-button-text" label="Não" (click)="deleteModeloDialog = false"></button>
+        <button pButton pRipple icon="pi pi-check" class="p-button-text" label="Sim" (click)="deleteModelo()"></button>
+    </ng-template>
+</p-dialog>

@@ -28,6 +28,11 @@ export class AppMenuComponent implements OnInit {
                     { label: 'Histórico de Chat', icon: 'pi pi-fw pi-comment', routerLink: ['/pages/chat-histories'] },
                     { label: 'Categorias de Mídia', icon: 'pi pi-fw pi-tags', routerLink: ['/pages/media-categories'] },
                     { label: 'Jogos Interativos', icon: 'pi pi-fw pi-play', routerLink: ['/pages/jogos-interativos'] },
+                    { label: 'Empresas', icon: 'pi pi-fw pi-building', routerLink: ['/pages/empresas'] },
+                    { label: 'Filiais', icon: 'pi pi-fw pi-sitemap', routerLink: ['/pages/filiais'] },
+                    { label: 'Modelos de Proposta', icon: 'pi pi-fw pi-file', routerLink: ['/pages/modelos-proposta'] },
+                    { label: 'Serviços de Proposta', icon: 'pi pi-fw pi-briefcase', routerLink: ['/pages/servicos-proposta'] },
+                    { label: 'Propostas', icon: 'pi pi-fw pi-send', routerLink: ['/pages/propostas'] },
                     { label: 'Resources', icon: 'pi pi-fw pi-folder-open', routerLink: ['/pages/resources'] },
                     //{ label: 'Termometro', icon: 'pi pi-fw pi-id-card', routerLink: ['/pages/termometro'] },
                 ]

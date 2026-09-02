@@ -1,0 +1,41 @@
+:host ::ng-deep {
+    .p-dropdown {
+        width: 100%;
+    }
+
+    // área editável do CKEditor com altura confortável e rolagem
+    .ck-editor__editable_inline {
+        min-height: 320px;
+        max-height: 460px;
+    }
+
+    // integra o CKEditor ao tema (bordas suaves)
+    .ck.ck-editor {
+        width: 100%;
+    }
+}
+
+.ckeditor-wrapper {
+    width: 100%;
+}
+
+.parametros-list {
+    max-height: 320px;
+    overflow-y: auto;
+    padding-right: 0.25rem;
+}
+
+.parametro-row {
+    padding: 0.25rem 0.5rem;
+    border: 1px solid var(--surface-200);
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+    background: var(--surface-50);
+}
+
+code {
+    background: var(--surface-200);
+    padding: 0.1rem 0.35rem;
+    border-radius: 4px;
+    font-family: monospace;
+}
