@@ -1,0 +1,2 @@
+src/app/demo/components/pages/proposta-empresa-index/proposta-empresa-index.component.ts(310,85): error TS2304: Cannot find name 'ParametroTipo'.
+DONE_EXIT_2 

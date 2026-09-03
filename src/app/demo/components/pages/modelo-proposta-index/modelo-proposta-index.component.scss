@@ -2,38 +2,10 @@
     .p-dropdown {
         width: 100%;
     }
-
-    // área editável do CKEditor com altura confortável e rolagem
-    .ck-editor__editable_inline {
-        min-height: 320px;
-        max-height: 460px;
-    }
-
-    // integra o CKEditor ao tema (bordas suaves)
-    .ck.ck-editor {
-        width: 100%;
-    }
-
-    // área de edição de código-fonte do CKEditor com fonte monoespaçada
-    .ck-source-editing-area textarea {
-        min-height: 320px;
-        font-family: 'Fira Code', 'Consolas', monospace;
-        font-size: 0.85rem;
-    }
-}
-
-.html-source {
-    width: 100%;
-    font-family: 'Fira Code', 'Consolas', monospace;
-    font-size: 0.85rem;
-}
-
-.ckeditor-wrapper {
-    width: 100%;
 }
 
 .parametros-list {
-    max-height: 320px;
+    max-height: 420px;
     overflow-y: auto;
     padding-right: 0.25rem;
 }
@@ -51,4 +23,44 @@ code {
     padding: 0.1rem 0.35rem;
     border-radius: 4px;
     font-family: monospace;
+}
+
+/* Editor CodeMirror */
+.cm-host {
+    border: 1px solid var(--surface-300);
+    border-radius: 6px;
+    overflow: hidden;
+
+    ::ng-deep .cm-editor {
+        height: 460px;
+    }
+
+    ::ng-deep .cm-scroller {
+        font-family: 'Fira Code', 'Consolas', monospace;
+        font-size: 13px;
+    }
+}
+
+/* Prévia em tela cheia */
+.preview-fullscreen {
+    width: 100%;
+    height: 100%;
+    background: #fff;
+}
+
+.preview-frame {
+    width: 100%;
+    height: 100%;
+    min-height: 70vh;
+    border: 0;
+    display: block;
+}
+
+.preview-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-height: 300px;
+    color: var(--text-color-secondary);
 }

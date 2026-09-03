@@ -1,10 +1,12 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { MessageService } from 'primeng/api';
 import { Empresa, EmpresaService } from 'src/app/demo/service/empresa.service';
 import {
     ModeloProposta,
     ModeloPropostaService,
-    ParametroSchema
+    ParametroSchema,
+    ParametroTipo
 } from 'src/app/demo/service/modelo-proposta.service';
 import {
     PROPOSTA_STATUS,
@@ -32,10 +34,15 @@ interface ServicoLinha {
     styleUrl: './proposta-empresa-index.component.scss',
     providers: [MessageService]
 })
-export class PropostaEmpresaIndexComponent implements OnInit {
+export class PropostaEmpresaIndexComponent implements OnInit, OnDestroy {
     propostas: PropostaEmpresa[] = [];
     empresaOptions: SelectOption[] = [];
     modeloOptions: SelectOption[] = [];
+
+    /** Estado do modal de prévia da proposta em tela cheia. */
+    previewDialog = false;
+    previewUrl: SafeResourceUrl | null = null;
+    private previewObjectUrl: string | null = null;
 
     /** Modelos carregados (com parametros_schema) para derivar os campos de parâmetro. */
     private modelos: ModeloProposta[] = [];
@@ -68,12 +75,17 @@ export class PropostaEmpresaIndexComponent implements OnInit {
         private readonly empresaService: EmpresaService,
         private readonly modeloPropostaService: ModeloPropostaService,
         private readonly servicosService: ServicosPropostaService,
-        private readonly servicoPropostaEmpresaService: ServicoPropostaEmpresaService
+        private readonly servicoPropostaEmpresaService: ServicoPropostaEmpresaService,
+        private readonly sanitizer: DomSanitizer
     ) {}
 
     ngOnInit(): void {
         void this.loadPropostas();
         void this.loadOptions();
+    }
+
+    ngOnDestroy(): void {
+        this.revokePreview();
     }
 
     createEmptyProposta(): PropostaEmpresa {
@@ -131,6 +143,10 @@ export class PropostaEmpresaIndexComponent implements OnInit {
     }
 
     private modeloLabel(modelo: ModeloProposta, index: number): string {
+        if (modelo.nome?.trim()) {
+            return modelo.nome.trim();
+        }
+        // fallback para modelos sem nome (dados antigos): usa trecho do conteúdo
         const preview = (modelo.content || '')
             .replace(/<[^>]*>/g, ' ')
             .replace(/\s+/g, ' ')
@@ -220,6 +236,127 @@ export class PropostaEmpresaIndexComponent implements OnInit {
                 : this.proposta.parametros?.[def.chave] ?? null;
         }
         this.proposta.parametros = novosParametros;
+    }
+
+    // --- Pré-visualização da proposta ---
+
+    /** Abre a prévia da proposta com os campos-chave preenchidos, em tela cheia. */
+    visualizarProposta(): void {
+        const modelo = this.modelos.find((m) => m.id === this.proposta.modelo_proposta_id);
+
+        if (!modelo) {
+            this.messageService.add({ severity: 'warn', summary: 'Atenção', detail: 'Selecione um modelo de proposta para pré-visualizar.', life: 3500 });
+            return;
+        }
+
+        if (!modelo.content?.trim()) {
+            this.messageService.add({ severity: 'warn', summary: 'Atenção', detail: 'O modelo selecionado não possui conteúdo para pré-visualizar.', life: 3500 });
+            return;
+        }
+
+        const html = this.aplicarTokens(modelo.content, this.montarTokens());
+        this.gerarPreview(html);
+        this.previewDialog = true;
+    }
+
+    /** Monta o mapa de tokens (chave -> valor exibível) com base nos campos preenchidos. */
+    private montarTokens(): Record<string, string> {
+        const tokens: Record<string, string> = {};
+
+        // parâmetros declarados no modelo
+        for (const def of this.parametrosDefinicao) {
+            const bruto = this.proposta.parametros?.[def.chave];
+            tokens[def.chave] = this.formatarValorParametro(bruto, def.tipo);
+        }
+
+        // tokens derivados dos campos-chave da proposta (úteis mesmo sem estarem no schema)
+        const empresa = this.empresaOptions.find((e) => e.value === this.proposta.empresa_id);
+        tokens['empresa'] = empresa?.label ?? '';
+        tokens['empresa_nome'] = empresa?.label ?? '';
+        tokens['status'] = this.statusLabel(this.proposta.status);
+        tokens['valor'] = this.proposta.valor != null ? this.formatarMoeda(this.proposta.valor) : '';
+        tokens['validade'] = this.validade ? this.formatarDataBr(this.validade) : '';
+        tokens['vigencia'] = this.proposta.vigencia != null ? String(this.proposta.vigencia) : '';
+        tokens['data'] = this.formatarDataBr(new Date());
+        tokens['servicos'] = this.montarListaServicos();
+
+        return tokens;
+    }
+
+    /** Substitui as ocorrências de ${chave} no conteúdo pelos valores informados. */
+    private aplicarTokens(content: string, tokens: Record<string, string>): string {
+        return content.replace(/\$\{\s*([a-zA-Z0-9_]+)\s*\}/g, (match, chave: string) => {
+            const valor = tokens[chave];
+            // mantém o token original quando não há valor definido, para evidenciar o que falta
+            if (valor === undefined) {
+                return match;
+            }
+            return valor.length > 0 ? valor : match;
+        });
+    }
+
+    private montarListaServicos(): string {
+        const itens = this.servicoItens
+            .filter((item) => item.servico_proposta_id)
+            .map((item) => {
+                const servico = this.servicoOptions.find((s) => s.value === item.servico_proposta_id);
+                const nome = servico?.label ?? 'Serviço';
+                const qtde = item.qtde && item.qtde > 0 ? item.qtde : 1;
+                return `<li>${qtde}x ${nome}</li>`;
+            });
+
+        return itens.length > 0 ? `<ul>${itens.join('')}</ul>` : '';
+    }
+
+    private formatarValorParametro(valor: string | number | null | undefined, tipo: ParametroTipo): string {
+        if (valor === null || valor === undefined || valor === '') {
+            return '';
+        }
+
+        switch (tipo) {
+            case 'moeda': {
+                const numero = typeof valor === 'number' ? valor : parseFloat(String(valor).replace(',', '.'));
+                return Number.isFinite(numero) ? this.formatarMoeda(numero) : String(valor);
+            }
+            case 'data': {
+                const data = this.parseDate(String(valor));
+                return isNaN(data.getTime()) ? String(valor) : this.formatarDataBr(data);
+            }
+            default:
+                return String(valor);
+        }
+    }
+
+    private formatarMoeda(valor: number): string {
+        return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+
+    private formatarDataBr(date: Date): string {
+        const day = `${date.getDate()}`.padStart(2, '0');
+        const month = `${date.getMonth() + 1}`.padStart(2, '0');
+        return `${day}/${month}/${date.getFullYear()}`;
+    }
+
+    /** Gera a prévia fiel via Blob URL + iframe (documento HTML completo). */
+    private gerarPreview(html: string): void {
+        this.revokePreview();
+        const conteudo = html || '<p style="font-family:sans-serif;color:#888;padding:24px">Sem conteúdo para pré-visualizar.</p>';
+        const blob = new Blob([conteudo], { type: 'text/html;charset=utf-8' });
+        this.previewObjectUrl = URL.createObjectURL(blob);
+        this.previewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.previewObjectUrl);
+    }
+
+    fecharPreview(): void {
+        this.previewDialog = false;
+        this.revokePreview();
+    }
+
+    private revokePreview(): void {
+        if (this.previewObjectUrl) {
+            URL.revokeObjectURL(this.previewObjectUrl);
+            this.previewObjectUrl = null;
+        }
+        this.previewUrl = null;
     }
 
     async saveProposta(): Promise<void> {

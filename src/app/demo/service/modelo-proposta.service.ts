@@ -22,6 +22,7 @@ export interface ParametroSchema {
 
 export interface ModeloProposta {
     id?: string;
+    nome: string | null;
     status: ModeloPropostaStatus;
     content: string | null;
     parametros_schema: ParametroSchema[];
@@ -46,7 +47,7 @@ export class ModeloPropostaService {
     async getAll(): Promise<ModeloProposta[]> {
         const { data, error } = await this.supabaseService.client
             .from(this.table)
-            .select('id, status, content, parametros_schema, created_at, updated_at')
+            .select('id, nome, status, content, parametros_schema, created_at, updated_at')
             .order('updated_at', { ascending: false, nullsFirst: false })
             .order('created_at', { ascending: false, nullsFirst: false });
 
@@ -68,7 +69,7 @@ export class ModeloPropostaService {
                 created_at: now,
                 updated_at: now
             })
-            .select('id, status, content, parametros_schema, created_at, updated_at')
+            .select('id, nome, status, content, parametros_schema, created_at, updated_at')
             .single();
 
         if (error) {
@@ -87,7 +88,7 @@ export class ModeloPropostaService {
                 updated_at: new Date().toISOString()
             })
             .eq('id', id)
-            .select('id, status, content, parametros_schema, created_at, updated_at')
+            .select('id, nome, status, content, parametros_schema, created_at, updated_at')
             .single();
 
         if (error) {
@@ -112,7 +113,7 @@ export class ModeloPropostaService {
     async getAtivos(): Promise<ModeloProposta[]> {
         const { data, error } = await this.supabaseService.client
             .from(this.table)
-            .select('id, status, content, parametros_schema, created_at, updated_at')
+            .select('id, nome, status, content, parametros_schema, created_at, updated_at')
             .eq('status', 'ATIVO')
             .order('updated_at', { ascending: false, nullsFirst: false });
 

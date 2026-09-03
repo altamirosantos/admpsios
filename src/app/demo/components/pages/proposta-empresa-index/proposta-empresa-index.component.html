@@ -183,8 +183,24 @@
     </ng-template>
 
     <ng-template pTemplate="footer">
+        <button pButton pRipple label="Visualizar" icon="pi pi-eye" class="p-button-outlined mr-auto"
+            [disabled]="!proposta.modelo_proposta_id" (click)="visualizarProposta()"
+            pTooltip="Pré-visualiza a proposta com os campos-chave preenchidos"></button>
         <button pButton pRipple label="Cancelar" icon="pi pi-times" class="p-button-text" (click)="hideDialog()"></button>
         <button pButton pRipple label="Salvar" icon="pi pi-check" class="p-button-text" (click)="saveProposta()"></button>
+    </ng-template>
+</p-dialog>
+
+<!-- Prévia da proposta em tela cheia -->
+<p-dialog [(visible)]="previewDialog" [modal]="true" [maximizable]="false" [draggable]="false" [resizable]="false"
+    header="Pré-visualização da proposta" styleClass="preview-dialog" [style]="{ width: '100vw', height: '100vh' }"
+    [contentStyle]="{ padding: '0', overflow: 'hidden' }" (onHide)="fecharPreview()">
+    <div class="preview-frame-wrap">
+        <iframe *ngIf="previewUrl" [src]="previewUrl" class="preview-frame" title="Pré-visualização da proposta"
+            sandbox="allow-same-origin allow-popups"></iframe>
+    </div>
+    <ng-template pTemplate="footer">
+        <button pButton pRipple label="Fechar" icon="pi pi-times" class="p-button-text" (click)="fecharPreview()"></button>
     </ng-template>
 </p-dialog>
 

@@ -24,22 +24,24 @@
                 styleClass="p-datatable-striped">
                 <ng-template pTemplate="header">
                     <tr>
-                        <th scope="col">Prévia do conteúdo</th>
+                        <th scope="col">Nome</th>
                         <th scope="col" style="width: 140px">Status</th>
                         <th scope="col" style="width: 140px">Parâmetros</th>
                         <th scope="col" style="width: 170px">Atualizado em</th>
-                        <th scope="col" style="width: 120px">Ações</th>
+                        <th scope="col" style="width: 160px">Ações</th>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-modelo>
                     <tr>
-                        <td class="font-bold">{{ stripHtmlPreview(modelo.content) }}</td>
+                        <td class="font-bold">{{ modelo.nome || '(sem nome)' }}</td>
                         <td>
                             <p-tag [value]="statusLabel(modelo.status)" [severity]="statusSeverity(modelo.status)"></p-tag>
                         </td>
                         <td>{{ modelo.parametros_schema.length }} chave(s)</td>
                         <td>{{ modelo.updated_at ? (modelo.updated_at | date: 'dd/MM/yyyy HH:mm') : '—' }}</td>
                         <td>
+                            <button pButton pRipple icon="pi pi-eye" class="p-button-rounded p-button-info mr-2"
+                                (click)="previewFromGrid(modelo)" pTooltip="Pré-visualizar"></button>
                             <button pButton pRipple icon="pi pi-pencil" class="p-button-rounded p-button-success mr-2"
                                 (click)="editModelo(modelo)" pTooltip="Editar"></button>
                             <button pButton pRipple icon="pi pi-trash" class="p-button-rounded p-button-danger"
@@ -57,19 +59,27 @@
     </div>
 </div>
 
-<p-dialog [(visible)]="modeloDialog" [style]="{ width: '900px' }" [modal]="true" [maximizable]="true"
-    [header]="modelo.id ? 'Editar modelo de proposta' : 'Novo modelo de proposta'" class="p-fluid">
+<p-dialog [(visible)]="modeloDialog" [style]="{ width: '960px' }" [modal]="true" [maximizable]="true"
+    [header]="modelo.id ? 'Editar modelo de proposta' : 'Novo modelo de proposta'" class="p-fluid"
+    (onShow)="onDialogShow()" (onHide)="hideDialog()">
     <ng-template pTemplate="content">
         <div class="grid">
             <!-- Coluna: parâmetros -->
-            <div class="col-12 lg:col-5">
+            <div class="col-12 lg:col-4">
+                <div class="field mb-3">
+                    <label for="nome">Nome do modelo <span class="text-red-500">*</span></label>
+                    <input id="nome" type="text" pInputText [(ngModel)]="modelo.nome" placeholder="Ex.: Proposta NR-1 padrão"
+                        [ngClass]="{ 'ng-invalid ng-dirty': submitted && !modelo.nome?.trim() }" />
+                    <small class="p-error" *ngIf="submitted && !modelo.nome?.trim()">O nome é obrigatório.</small>
+                </div>
+
                 <div class="flex align-items-center justify-content-between mb-2">
                     <label class="font-semibold m-0">Parâmetros do conteúdo</label>
                     <p-dropdown [options]="statusOptions" [(ngModel)]="modelo.status" optionLabel="label"
                         optionValue="value" styleClass="w-8rem" appendTo="body"></p-dropdown>
                 </div>
                 <small class="text-color-secondary block mb-3">
-                    Defina as chaves usadas no conteúdo no formato <code>&#36;&#123;chave&#125;</code>.
+                    Defina as chaves usadas no conteúdo no formato <code>{{ chaveToken('chave') }}</code>.
                 </small>
 
                 <div class="parametros-list">
@@ -104,21 +114,27 @@
                 <small class="p-error block mt-2" *ngIf="submitted && hasDuplicateKeys()">Há chaves duplicadas.</small>
             </div>
 
-            <!-- Coluna: editor de conteúdo -->
-            <div class="col-12 lg:col-7">
+            <!-- Coluna: editor de código HTML -->
+            <div class="col-12 lg:col-8">
                 <div class="flex align-items-center justify-content-between mb-2">
                     <label class="font-semibold m-0">Conteúdo (HTML)</label>
-                    <button pButton pRipple type="button" label="Importar HTML" icon="pi pi-code"
-                        class="p-button-outlined p-button-sm" (click)="openImportarHtml()"></button>
+                    <div class="flex gap-2">
+                        <button pButton pRipple type="button" label="Importar arquivo" icon="pi pi-upload"
+                            class="p-button-outlined p-button-sm" (click)="fileInput.click()"></button>
+                        <button pButton pRipple type="button" label="Ver prévia" icon="pi pi-eye"
+                            class="p-button-outlined p-button-sm" (click)="abrirPreview()"></button>
+                    </div>
+                    <input #fileInput type="file" accept=".html,.htm,text/html" hidden
+                        (change)="onArquivoSelecionado($event)" />
                 </div>
-                <div class="ckeditor-wrapper">
-                    <ckeditor [editor]="Editor" [config]="editorConfig" [(ngModel)]="modelo.content"
-                        (ready)="onEditorReady($event)"></ckeditor>
-                </div>
+
+                <!-- Editor CodeMirror (HTML com indentação, highlight e numeração de linha) -->
+                <div #cmHost class="cm-host"></div>
+
                 <small class="text-color-secondary block mt-2">
-                    Use o botão <i class="pi pi-arrow-right"></i> ao lado de cada parâmetro para inserir a chave na posição do cursor.
-                    Para colar um HTML pronto, use <strong>Importar HTML</strong> ou o botão de código-fonte
-                    (<i class="pi pi-code"></i>) na barra do editor.
+                    Editor de código HTML. Use o botão <i class="pi pi-arrow-right"></i> ao lado de cada parâmetro
+                    para inserir a chave na posição do cursor. Clique em <strong>Ver prévia</strong> para conferir
+                    o resultado em tela cheia.
                 </small>
             </div>
         </div>
@@ -130,20 +146,15 @@
     </ng-template>
 </p-dialog>
 
-<p-dialog [(visible)]="importarHtmlDialog" [style]="{ width: '760px' }" [modal]="true"
-    header="Importar HTML" class="p-fluid" [maximizable]="true">
-    <ng-template pTemplate="content">
-        <small class="text-color-secondary block mb-2">
-            Cole aqui o HTML do seu modelo. Ao aplicar, o conteúdo substituirá o que está no editor.
-            Você pode usar os parâmetros no formato <code>{{ '$' }}{{ '{chave}' }}</code>.
-        </small>
-        <textarea pInputTextarea [(ngModel)]="htmlImportado" rows="16" class="html-source"
-            placeholder="<div>...seu HTML...</div>"></textarea>
-    </ng-template>
-    <ng-template pTemplate="footer">
-        <button pButton pRipple label="Cancelar" icon="pi pi-times" class="p-button-text" (click)="importarHtmlDialog = false"></button>
-        <button pButton pRipple label="Aplicar no editor" icon="pi pi-check" class="p-button-text" (click)="aplicarHtmlImportado()"></button>
-    </ng-template>
+<!-- Prévia em tela cheia -->
+<p-dialog [(visible)]="previewDialog" [modal]="true" [maximizable]="false" [dismissableMask]="true"
+    header="Prévia do modelo" styleClass="preview-dialog" [style]="{ width: '95vw', height: '95vh' }"
+    [contentStyle]="{ padding: '0', height: '100%' }" (onHide)="fecharPreview()">
+    <div class="preview-fullscreen">
+        <iframe *ngIf="previewUrl" [src]="previewUrl" class="preview-frame"
+            title="Prévia do modelo" sandbox="allow-same-origin allow-popups"></iframe>
+        <div *ngIf="!previewUrl" class="preview-empty">Nada para pré-visualizar.</div>
+    </div>
 </p-dialog>
 
 <p-dialog [(visible)]="deleteModeloDialog" header="Confirmação" [modal]="true" [style]="{ width: '450px' }">
