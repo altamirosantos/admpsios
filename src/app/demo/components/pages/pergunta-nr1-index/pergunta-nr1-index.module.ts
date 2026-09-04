@@ -3,7 +3,9 @@ import { NgModule } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
+import { DropdownModule } from 'primeng/dropdown';
 import { InputNumberModule } from 'primeng/inputnumber';
+import { InputSwitchModule } from 'primeng/inputswitch';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputTextareaModule } from 'primeng/inputtextarea';
 import { RippleModule } from 'primeng/ripple';
@@ -29,6 +31,8 @@ import { PerguntaNr1IndexComponent } from './pergunta-nr1-index.component';
         InputTextModule,
         InputNumberModule,
         InputTextareaModule,
+        InputSwitchModule,
+        DropdownModule,
         DialogModule,
         TooltipModule
     ],

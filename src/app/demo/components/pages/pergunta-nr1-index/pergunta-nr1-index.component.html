@@ -37,8 +37,9 @@
                     <tr>
                         <th scope="col" style="width: 90px" pSortableColumn="ordem">Ordem <p-sortIcon field="ordem"></p-sortIcon></th>
                         <th scope="col">Pergunta</th>
-                        <th scope="col" style="width: 180px">Fator de risco</th>
-                        <th scope="col" style="width: 110px">Opções</th>
+                        <th scope="col" style="width: 170px">Fator de risco</th>
+                        <th scope="col" style="width: 200px">Tipo de resposta</th>
+                        <th scope="col" style="width: 100px">Opções</th>
                         <th scope="col" style="width: 120px">Ações</th>
                     </tr>
                 </ng-template>
@@ -47,9 +48,12 @@
                         <td class="font-bold">{{ pergunta.ordem }}</td>
                         <td>{{ pergunta.texto || '—' }}</td>
                         <td>{{ pergunta.fator_risco || '—' }}</td>
+                        <td>{{ tipoRespostaLabel(pergunta.tipo_resposta) }}</td>
                         <td>
-                            <p-tag [value]="totalOpcoes(pergunta) + ' opção(ões)'"
+                            <p-tag *ngIf="pergunta.tipo_resposta !== 'TEXTO_LIVRE'"
+                                [value]="totalOpcoes(pergunta) + ' opção(ões)'"
                                 [severity]="totalOpcoes(pergunta) > 0 ? 'info' : 'warning'"></p-tag>
+                            <span *ngIf="pergunta.tipo_resposta === 'TEXTO_LIVRE'" class="text-color-secondary">—</span>
                         </td>
                         <td>
                             <button pButton pRipple icon="pi pi-pencil" class="p-button-rounded p-button-success mr-2"
@@ -61,7 +65,7 @@
                 </ng-template>
                 <ng-template pTemplate="emptymessage">
                     <tr>
-                        <td colspan="5">Nenhuma pergunta cadastrada.</td>
+                        <td colspan="6">Nenhuma pergunta cadastrada.</td>
                     </tr>
                 </ng-template>
             </p-table>
@@ -73,7 +77,7 @@
     [header]="pergunta.id ? 'Editar pergunta' : 'Nova pergunta'" class="p-fluid">
     <ng-template pTemplate="content">
         <div class="formgrid grid">
-            <div class="field col-12 md:col-3">
+            <div class="field col-6 md:col-3">
                 <label for="ordem">Ordem <span class="text-red-500">*</span></label>
                 <p-inputNumber inputId="ordem" [(ngModel)]="pergunta.ordem" [min]="1" [useGrouping]="false"
                     [showButtons]="true" buttonLayout="horizontal" spinnerMode="horizontal"
@@ -82,10 +86,31 @@
                     [ngClass]="{ 'ng-invalid ng-dirty': submitted && pergunta.ordem == null }"></p-inputNumber>
                 <small class="p-error" *ngIf="submitted && pergunta.ordem == null">Obrigatória.</small>
             </div>
-            <div class="field col-12 md:col-9">
+            <div class="field col-6 md:col-9">
                 <label for="fatorRisco">Fator de risco</label>
                 <input id="fatorRisco" type="text" pInputText [(ngModel)]="pergunta.fator_risco"
                     placeholder="Ex.: Organização do trabalho" />
+            </div>
+        </div>
+
+        <div class="formgrid grid">
+            <div class="field col-12 md:col-8">
+                <label for="tipoResposta">Tipo de resposta <span class="text-red-500">*</span></label>
+                <p-dropdown inputId="tipoResposta" [options]="tipoRespostaOptions" [(ngModel)]="pergunta.tipo_resposta"
+                    optionLabel="label" optionValue="value" appendTo="body" (onChange)="onTipoRespostaChange()"
+                    [ngClass]="{ 'ng-invalid ng-dirty': submitted && !pergunta.tipo_resposta }">
+                    <ng-template let-opcao pTemplate="item">
+                        <div class="flex flex-column">
+                            <span>{{ opcao.label }}</span>
+                            <small class="text-color-secondary">{{ opcao.descricao }}</small>
+                        </div>
+                    </ng-template>
+                </p-dropdown>
+                <small class="p-error" *ngIf="submitted && !pergunta.tipo_resposta">O tipo de resposta é obrigatório.</small>
+            </div>
+            <div class="field col-12 md:col-4 flex flex-column">
+                <label for="obrigatoria">Obrigatória</label>
+                <p-inputSwitch inputId="obrigatoria" [(ngModel)]="pergunta.obrigatoria"></p-inputSwitch>
             </div>
         </div>
 
@@ -97,8 +122,14 @@
             <small class="p-error" *ngIf="submitted && !pergunta.texto?.trim()">A pergunta é obrigatória.</small>
         </div>
 
+        <!-- Aviso para tipo TEXTO_LIVRE (não usa opções) -->
+        <div *ngIf="!exigeOpcoes" class="texto-livre-hint mt-2">
+            <i class="pi pi-info-circle mr-2"></i>
+            <span>Perguntas de <strong>texto livre</strong> não possuem opções de resposta fixas — o colaborador responde em campo aberto.</span>
+        </div>
+
         <!-- Opções de resposta (1..n) -->
-        <div class="opcoes-box mt-2">
+        <div *ngIf="exigeOpcoes" class="opcoes-box mt-2">
             <div class="flex align-items-center justify-content-between mb-2">
                 <div class="flex align-items-center gap-2">
                     <i class="pi pi-list text-primary"></i>

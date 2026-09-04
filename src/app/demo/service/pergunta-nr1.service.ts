@@ -10,17 +10,33 @@ export interface OpcaoRespostaNr1Nested {
   peso: number;
 }
 
+/** Tipos de resposta suportados pela pergunta (define como as opções são estruturadas). */
+export type TipoResposta = 'LIKERT_5' | 'LIKERT_3' | 'BOOLEANO' | 'NOMINAL_MULTIPLO' | 'TEXTO_LIVRE';
+
+export const TIPO_RESPOSTA: TipoResposta[] = [
+  'LIKERT_5',
+  'LIKERT_3',
+  'BOOLEANO',
+  'NOMINAL_MULTIPLO',
+  'TEXTO_LIVRE'
+];
+
 export interface PerguntaNr1 {
   id?: string;
   texto: string;
   ordem: number;
   fator_risco: string | null;
+  obrigatoria: boolean;
+  tipo_resposta: TipoResposta;
   opcoes_resposta?: OpcaoRespostaNr1Nested[];
   created_at?: string | null;
   updated_at?: string | null;
 }
 
-export type PerguntaNr1Payload = Pick<PerguntaNr1, 'texto' | 'ordem' | 'fator_risco'>;
+export type PerguntaNr1Payload = Pick<
+  PerguntaNr1,
+  'texto' | 'ordem' | 'fator_risco' | 'obrigatoria' | 'tipo_resposta'
+>;
 
 type PerguntaNr1Row = Omit<PerguntaNr1, 'opcoes_resposta'> & {
   opcoes_resposta?: OpcaoRespostaNr1Nested[] | null;
@@ -37,6 +53,8 @@ export class PerguntaNr1Service {
     texto,
     ordem,
     fator_risco,
+    obrigatoria,
+    tipo_resposta,
     created_at,
     updated_at,
     opcoes_resposta:opcao_resposta_nr1(id, pergunta_id, texto, ordem, peso)

@@ -1,13 +1,24 @@
 import { Component, OnInit } from '@angular/core';
 import { MessageService } from 'primeng/api';
 import { OpcaoRespostaNr1Service } from 'src/app/demo/service/opcao-resposta-nr1.service';
-import { PerguntaNr1, PerguntaNr1Service } from 'src/app/demo/service/pergunta-nr1.service';
+import {
+    PerguntaNr1,
+    PerguntaNr1Service,
+    TIPO_RESPOSTA,
+    TipoResposta
+} from 'src/app/demo/service/pergunta-nr1.service';
 
 /** Linha editável da área de opções de resposta (1..n). */
 interface OpcaoLinha {
     texto: string;
     ordem: number;
     peso: number;
+}
+
+interface TipoRespostaOption {
+    label: string;
+    value: TipoResposta;
+    descricao: string;
 }
 
 @Component({
@@ -28,6 +39,14 @@ export class PerguntaNr1IndexComponent implements OnInit {
     /** Opções de resposta da pergunta em edição (1..n). */
     opcoes: OpcaoLinha[] = [];
 
+    readonly tipoRespostaOptions: TipoRespostaOption[] = [
+        { value: 'LIKERT_5', label: 'Escala Likert (5 pontos)', descricao: 'Nunca, Raramente, Às vezes, Frequentemente, Sempre.' },
+        { value: 'LIKERT_3', label: 'Escala Likert (3 pontos)', descricao: 'Raro/Nunca, Às vezes, Frequente/Sempre.' },
+        { value: 'BOOLEANO', label: 'Booleano (Sim / Não)', descricao: 'Resposta direta de sim ou não.' },
+        { value: 'NOMINAL_MULTIPLO', label: 'Múltipla escolha (várias seleções)', descricao: 'Permite selecionar vários fatores.' },
+        { value: 'TEXTO_LIVRE', label: 'Texto livre (campo aberto)', descricao: 'Resposta qualitativa; sem opções fixas.' }
+    ];
+
     constructor(
         private readonly messageService: MessageService,
         private readonly perguntaService: PerguntaNr1Service,
@@ -42,8 +61,26 @@ export class PerguntaNr1IndexComponent implements OnInit {
         return {
             texto: '',
             ordem: 1,
-            fator_risco: null
+            fator_risco: null,
+            obrigatoria: true,
+            tipo_resposta: 'LIKERT_5'
         };
+    }
+
+    /** Indica se o tipo de resposta selecionado usa opções de resposta cadastráveis. */
+    get exigeOpcoes(): boolean {
+        return this.pergunta.tipo_resposta !== 'TEXTO_LIVRE';
+    }
+
+    /** Ao trocar o tipo para TEXTO_LIVRE, limpa as opções (não se aplicam). */
+    onTipoRespostaChange(): void {
+        if (!this.exigeOpcoes) {
+            this.opcoes = [];
+        }
+    }
+
+    tipoRespostaLabel(tipo: TipoResposta): string {
+        return this.tipoRespostaOptions.find((opcao) => opcao.value === tipo)?.label || tipo;
     }
 
     async loadPerguntas(): Promise<void> {
@@ -114,11 +151,12 @@ export class PerguntaNr1IndexComponent implements OnInit {
     async savePergunta(): Promise<void> {
         this.submitted = true;
 
-        if (!this.pergunta.texto?.trim() || this.pergunta.ordem == null) {
+        if (!this.pergunta.texto?.trim() || this.pergunta.ordem == null || !this.pergunta.tipo_resposta) {
             return;
         }
 
-        if (this.opcoesInvalidas()) {
+        // opções só se aplicam a tipos diferentes de TEXTO_LIVRE
+        if (this.exigeOpcoes && this.opcoesInvalidas()) {
             this.messageService.add({ severity: 'warn', summary: 'Atenção', detail: 'Informe o texto de todas as opções de resposta.', life: 4000 });
             return;
         }
@@ -126,7 +164,9 @@ export class PerguntaNr1IndexComponent implements OnInit {
         const payload = {
             texto: this.pergunta.texto.trim(),
             ordem: this.pergunta.ordem,
-            fator_risco: this.pergunta.fator_risco?.trim() || null
+            fator_risco: this.pergunta.fator_risco?.trim() || null,
+            obrigatoria: this.pergunta.obrigatoria,
+            tipo_resposta: this.pergunta.tipo_resposta
         };
 
         try {
