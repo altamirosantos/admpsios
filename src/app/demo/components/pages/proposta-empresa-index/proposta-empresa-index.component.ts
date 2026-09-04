@@ -50,6 +50,12 @@ export class PropostaEmpresaIndexComponent implements OnInit, OnDestroy {
     /** Definição dos parâmetros do modelo selecionado (para renderizar os campos). */
     parametrosDefinicao: ParametroSchema[] = [];
 
+    /**
+     * Chaves preenchidas automaticamente pela própria proposta (não pedem input do usuário):
+     * nome da empresa selecionada e data da proposta (data atual).
+     */
+    private readonly autoParametros = new Set(['empresa', 'empresa_nome', 'data', 'data_proposta']);
+
     /** Opções de serviços ativos para a área de serviços da proposta. */
     servicoOptions: SelectOption[] = [];
 
@@ -227,7 +233,10 @@ export class PropostaEmpresaIndexComponent implements OnInit, OnDestroy {
 
     private applyModeloParametros(modeloId: string | null, resetValues: boolean): void {
         const modelo = this.modelos.find((m) => m.id === modeloId);
-        this.parametrosDefinicao = modelo ? modelo.parametros_schema : [];
+        // Oculta dos campos os parâmetros preenchidos automaticamente (empresa e data da proposta).
+        this.parametrosDefinicao = modelo
+            ? modelo.parametros_schema.filter((def) => !this.isAutoParametro(def.chave))
+            : [];
 
         const novosParametros: Record<string, string | number | null> = {};
         for (const def of this.parametrosDefinicao) {
@@ -236,6 +245,11 @@ export class PropostaEmpresaIndexComponent implements OnInit, OnDestroy {
                 : this.proposta.parametros?.[def.chave] ?? null;
         }
         this.proposta.parametros = novosParametros;
+    }
+
+    /** Indica se a chave é preenchida automaticamente (não deve virar campo de input). */
+    private isAutoParametro(chave: string): boolean {
+        return this.autoParametros.has(chave.trim().toLowerCase());
     }
 
     // --- Pré-visualização da proposta ---
@@ -269,15 +283,19 @@ export class PropostaEmpresaIndexComponent implements OnInit, OnDestroy {
             tokens[def.chave] = this.formatarValorParametro(bruto, def.tipo);
         }
 
-        // tokens derivados dos campos-chave da proposta (úteis mesmo sem estarem no schema)
+        // tokens preenchidos automaticamente (têm precedência): nome da empresa e data da proposta
         const empresa = this.empresaOptions.find((e) => e.value === this.proposta.empresa_id);
+        const hoje = this.formatarDataBr(new Date());
         tokens['empresa'] = empresa?.label ?? '';
         tokens['empresa_nome'] = empresa?.label ?? '';
+        tokens['data'] = hoje;
+        tokens['data_proposta'] = hoje;
+
+        // demais tokens derivados dos campos-chave da proposta
         tokens['status'] = this.statusLabel(this.proposta.status);
         tokens['valor'] = this.proposta.valor != null ? this.formatarMoeda(this.proposta.valor) : '';
         tokens['validade'] = this.validade ? this.formatarDataBr(this.validade) : '';
         tokens['vigencia'] = this.proposta.vigencia != null ? String(this.proposta.vigencia) : '';
-        tokens['data'] = this.formatarDataBr(new Date());
         tokens['servicos'] = this.montarListaServicos();
 
         return tokens;
