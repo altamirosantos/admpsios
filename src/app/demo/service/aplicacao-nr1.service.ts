@@ -1,6 +1,11 @@
 import { Injectable } from '@angular/core';
 import { SupabaseService } from './supabase.service';
 
+/** Status possíveis de um lote de aplicação NR-1. Apenas ATIVO libera o questionário. */
+export type AplicacaoStatus = 'GERADO' | 'ATIVO' | 'ENCERRADO' | 'CANCELADO';
+
+export const APLICACAO_STATUS: AplicacaoStatus[] = ['GERADO', 'ATIVO', 'ENCERRADO', 'CANCELADO'];
+
 export interface AplicacaoNr1FilialSummary {
   id: string;
   nome_fantasia: string | null;
@@ -115,6 +120,18 @@ export class AplicacaoNr1Service {
       status: row?.status,
       total_tokens: Number(row?.total_tokens ?? 0)
     };
+  }
+
+  /** Atualiza apenas o status do lote (GERADO/ATIVO/ENCERRADO/CANCELADO). */
+  async atualizarStatus(id: string, status: AplicacaoStatus): Promise<void> {
+    const { error } = await this.supabaseService.client
+      .from(this.table)
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq('id', id);
+
+    if (error) {
+      throw error;
+    }
   }
 
   async getAll(): Promise<AplicacaoNr1[]> {

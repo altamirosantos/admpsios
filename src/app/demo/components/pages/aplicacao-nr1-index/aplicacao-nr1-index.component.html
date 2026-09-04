@@ -39,8 +39,9 @@
                         <th scope="col" style="width: 180px">Empresa</th>
                         <th scope="col" style="width: 160px">Filial</th>
                         <th scope="col" style="width: 130px">Status</th>
-                        <th scope="col" style="width: 180px">Respostas</th>
-                        <th scope="col" style="width: 160px">Criado em</th>
+                        <th scope="col" style="width: 160px">Respostas</th>
+                        <th scope="col" style="width: 150px">Criado em</th>
+                        <th scope="col" style="width: 90px">Ações</th>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-aplicacao>
@@ -49,7 +50,7 @@
                         <td>{{ empresaLabel(aplicacao) }}</td>
                         <td>{{ filialLabel(aplicacao) }}</td>
                         <td>
-                            <p-tag [value]="aplicacao.status" [severity]="statusSeverity(aplicacao.status)"></p-tag>
+                            <p-tag [value]="statusLabel(aplicacao.status)" [severity]="statusSeverity(aplicacao.status)"></p-tag>
                         </td>
                         <td>
                             <div class="flex align-items-center gap-2">
@@ -59,11 +60,15 @@
                             </div>
                         </td>
                         <td>{{ aplicacao.created_at ? (aplicacao.created_at | date: 'dd/MM/yyyy HH:mm') : '—' }}</td>
+                        <td>
+                            <button pButton pRipple icon="pi pi-sync" class="p-button-rounded p-button-help"
+                                (click)="editarStatus(aplicacao)" pTooltip="Alterar status"></button>
+                        </td>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="emptymessage">
                     <tr>
-                        <td colspan="6">Nenhuma aplicação gerada.</td>
+                        <td colspan="7">Nenhuma aplicação gerada.</td>
                     </tr>
                 </ng-template>
             </p-table>
@@ -154,5 +159,27 @@
     </div>
     <ng-template pTemplate="footer">
         <button pButton pRipple label="Fechar" icon="pi pi-check" class="p-button-text" (click)="resultadoDialog = false"></button>
+    </ng-template>
+</p-dialog>
+
+<!-- Diálogo: alterar status do lote -->
+<p-dialog [(visible)]="statusDialog" [modal]="true" [style]="{ width: '460px' }" header="Alterar status da aplicação"
+    class="p-fluid">
+    <ng-template pTemplate="content">
+        <p class="mb-3 text-color-secondary" *ngIf="aplicacaoEmEdicao">
+            Lote <b>{{ aplicacaoEmEdicao.nome }}</b>. O questionário só fica acessível aos colaboradores
+            quando o status está <b>Ativo</b>.
+        </p>
+        <div class="field">
+            <label for="statusLote">Status</label>
+            <p-dropdown inputId="statusLote" [options]="statusOptions" [(ngModel)]="novoStatus"
+                optionLabel="label" optionValue="value" appendTo="body"></p-dropdown>
+        </div>
+    </ng-template>
+    <ng-template pTemplate="footer">
+        <button pButton pRipple label="Cancelar" icon="pi pi-times" class="p-button-text"
+            (click)="statusDialog = false" [disabled]="salvandoStatus"></button>
+        <button pButton pRipple label="Salvar" icon="pi pi-check" (click)="salvarStatus()"
+            [loading]="salvandoStatus"></button>
     </ng-template>
 </p-dialog>

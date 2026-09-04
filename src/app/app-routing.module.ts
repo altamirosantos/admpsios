@@ -21,6 +21,8 @@ import { AppLayoutComponent } from "./layout/app.layout.component";
             },
             { path: 'auth', loadChildren: () => import('./demo/components/auth/auth.module').then(m => m.AuthModule) },
             { path: 'landing', loadChildren: () => import('./demo/components/landing/landing.module').then(m => m.LandingModule) },
+            // Rota pública e anônima do questionário NR-1 (acesso por token, sem authGuard nem layout admin)
+            { path: 'pesquisa/nr1', loadChildren: () => import('./demo/components/pesquisa-nr1/pesquisa-nr1.module').then(m => m.PesquisaNr1Module) },
             { path: 'notfound', component: NotfoundComponent },
             { path: '**', redirectTo: '/notfound' },
         ], { scrollPositionRestoration: 'enabled', anchorScrolling: 'enabled', onSameUrlNavigation: 'reload' })

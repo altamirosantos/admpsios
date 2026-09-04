@@ -1,0 +1,154 @@
+<div class="pesquisa-wrapper">
+
+    <!-- CARREGANDO -->
+    <div *ngIf="tela === 'CARREGANDO'" class="estado-central" role="status" aria-live="polite">
+        <div class="spinner" aria-hidden="true"></div>
+        <p class="estado-texto">Carregando questionário...</p>
+    </div>
+
+    <!-- LINK INVÁLIDO -->
+    <div *ngIf="tela === 'INVALIDO'" class="estado-central estado-mensagem">
+        <div class="icone-circulo icone-alerta" aria-hidden="true">
+            <i class="pi pi-times-circle"></i>
+        </div>
+        <h1 class="estado-titulo">Link inválido</h1>
+        <p class="estado-descricao">
+            Este link de pesquisa não é válido ou expirou. Verifique se você abriu o endereço completo
+            enviado pela sua empresa.
+        </p>
+    </div>
+
+    <!-- JÁ RESPONDIDO -->
+    <div *ngIf="tela === 'RESPONDIDO'" class="estado-central estado-mensagem">
+        <div class="icone-circulo icone-ok" aria-hidden="true">
+            <i class="pi pi-check-circle"></i>
+        </div>
+        <h1 class="estado-titulo">Questionário já respondido</h1>
+        <p class="estado-descricao">
+            Obrigado pela sua participação! Suas respostas já foram registradas com sucesso.
+        </p>
+    </div>
+
+    <!-- INDISPONÍVEL (aplicação não está ATIVA) -->
+    <div *ngIf="tela === 'INDISPONIVEL'" class="estado-central estado-mensagem">
+        <div class="icone-circulo icone-info" aria-hidden="true">
+            <i class="pi pi-clock"></i>
+        </div>
+        <h1 class="estado-titulo">Questionário indisponível</h1>
+        <p class="estado-descricao">
+            Este questionário não está disponível para resposta neste momento. Ele pode ainda não ter
+            sido liberado ou o prazo de participação já foi encerrado.
+        </p>
+        <p class="estado-descricao">
+            Em caso de dúvida, procure o responsável pela pesquisa na sua empresa.
+        </p>
+    </div>
+
+    <!-- ERRO GENÉRICO -->
+    <div *ngIf="tela === 'ERRO'" class="estado-central estado-mensagem">
+        <div class="icone-circulo icone-alerta" aria-hidden="true">
+            <i class="pi pi-exclamation-triangle"></i>
+        </div>
+        <h1 class="estado-titulo">Algo deu errado</h1>
+        <p class="estado-descricao">
+            Não conseguimos carregar o questionário agora. Verifique sua conexão e tente abrir o link novamente.
+        </p>
+    </div>
+
+    <!-- AGRADECIMENTO -->
+    <div *ngIf="tela === 'AGRADECIMENTO'" class="estado-central estado-mensagem">
+        <div class="icone-circulo icone-ok pulse" aria-hidden="true">
+            <i class="pi pi-check"></i>
+        </div>
+        <h1 class="estado-titulo">Respostas enviadas!</h1>
+        <p class="estado-descricao">
+            Muito obrigado por participar. Sua contribuição é essencial para tornarmos o ambiente
+            de trabalho mais saudável e seguro. <strong>Você já pode fechar esta página.</strong>
+        </p>
+        <p class="estado-anonimo">
+            <i class="pi pi-lock" aria-hidden="true"></i> Suas respostas foram registradas de forma 100% anônima.
+        </p>
+    </div>
+
+    <!-- QUESTIONÁRIO -->
+    <ng-container *ngIf="tela === 'QUESTIONARIO' && perguntaAtual as pergunta">
+        <!-- Cabeçalho fixo -->
+        <header class="cabecalho" role="banner">
+            <div class="cabecalho-conteudo">
+                <div class="cabecalho-topo">
+                    <h1 class="cabecalho-titulo">{{ nomeAplicacao || 'Pesquisa Psicossocial — NR-1' }}</h1>
+                    <span class="badge-anonimo">
+                        <i class="pi pi-lock" aria-hidden="true"></i> 100% anônima
+                    </span>
+                </div>
+
+                <!-- Barra de progresso -->
+                <div class="progresso-linha">
+                    <div class="progresso-barra" role="progressbar" [attr.aria-valuenow]="numeroAtual"
+                        [attr.aria-valuemin]="1" [attr.aria-valuemax]="totalPerguntas"
+                        [attr.aria-label]="'Pergunta ' + numeroAtual + ' de ' + totalPerguntas">
+                        <div class="progresso-preenchimento"
+                            [style.width.%]="(numeroAtual / totalPerguntas) * 100"></div>
+                    </div>
+                    <span class="progresso-texto">Pergunta {{ numeroAtual }} de {{ totalPerguntas }}</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Aviso de anonimato / LGPD -->
+        <p class="aviso-lgpd">
+            Sua resposta é confidencial e anônima. Nenhum dado pessoal é coletado — responda com
+            sinceridade, conforme a sua percepção.
+        </p>
+
+        <!-- Pergunta atual -->
+        <main class="pergunta-area" [attr.aria-live]="'polite'">
+            <div class="pergunta-card">
+                <span *ngIf="pergunta.fator_risco" class="pergunta-fator">{{ pergunta.fator_risco }}</span>
+                <h2 class="pergunta-texto">
+                    {{ pergunta.texto }}
+                    <span *ngIf="pergunta.obrigatoria" class="obrigatoria" aria-label="obrigatória">*</span>
+                </h2>
+
+                <!-- Opções como cards grandes -->
+                <div class="opcoes" role="radiogroup" [attr.aria-label]="pergunta.texto">
+                    <button *ngFor="let opcao of pergunta.opcoes; let i = index" type="button"
+                        class="opcao-card" [ngClass]="corEscala(pergunta, i)"
+                        [class.selecionada]="ehSelecionada(pergunta.id, opcao.id)"
+                        role="radio" [attr.aria-checked]="ehSelecionada(pergunta.id, opcao.id)"
+                        (click)="selecionarOpcao(pergunta.id, opcao.id)">
+                        <span class="opcao-marcador" aria-hidden="true">
+                            <i class="pi" [ngClass]="ehSelecionada(pergunta.id, opcao.id) ? 'pi-check-circle' : 'pi-circle'"></i>
+                        </span>
+                        <span class="opcao-texto">{{ opcao.texto }}</span>
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <!-- Navegação -->
+        <nav class="navegacao" aria-label="Navegação do questionário">
+            <button type="button" class="btn btn-secundario" (click)="anterior()" [disabled]="ehPrimeira">
+                <i class="pi pi-arrow-left" aria-hidden="true"></i> Anterior
+            </button>
+
+            <button *ngIf="!ehUltima" type="button" class="btn btn-primario" (click)="proxima()"
+                [disabled]="!opcaoSelecionadaAtual">
+                Próxima <i class="pi pi-arrow-right" aria-hidden="true"></i>
+            </button>
+
+            <button *ngIf="ehUltima" type="button" class="btn btn-enviar" (click)="enviar()"
+                [disabled]="!todasObrigatoriasRespondidas || enviando">
+                <span *ngIf="!enviando"><i class="pi pi-send" aria-hidden="true"></i> Enviar respostas</span>
+                <span *ngIf="enviando"><i class="pi pi-spinner pi-spin" aria-hidden="true"></i> Enviando...</span>
+            </button>
+        </nav>
+
+        <p *ngIf="mensagemErro" class="mensagem-erro" role="alert">{{ mensagemErro }}</p>
+
+        <p *ngIf="ehUltima && !todasObrigatoriasRespondidas" class="aviso-pendente" role="status">
+            Você ainda tem perguntas obrigatórias sem resposta ({{ respondidasCount }} de {{ totalPerguntas }} respondidas).
+        </p>
+    </ng-container>
+
+</div>

@@ -1,6 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { MessageService } from 'primeng/api';
-import { AplicacaoNr1, AplicacaoNr1Service } from 'src/app/demo/service/aplicacao-nr1.service';
+import {
+    APLICACAO_STATUS,
+    AplicacaoNr1,
+    AplicacaoNr1Service,
+    AplicacaoStatus
+} from 'src/app/demo/service/aplicacao-nr1.service';
 import { Cargo, CargoService } from 'src/app/demo/service/cargo.service';
 import { Empresa, EmpresaService } from 'src/app/demo/service/empresa.service';
 import { Filial, FilialService } from 'src/app/demo/service/filial.service';
@@ -46,6 +51,16 @@ export class AplicacaoNr1IndexComponent implements OnInit {
     // Feedback pós-geração
     resultadoDialog = false;
     ultimoResultado: { nome: string; total: number } | null = null;
+
+    // Edição de status
+    statusDialog = false;
+    salvandoStatus = false;
+    aplicacaoEmEdicao: AplicacaoNr1 | null = null;
+    novoStatus: AplicacaoStatus = 'GERADO';
+    readonly statusOptions = APLICACAO_STATUS.map((status) => ({
+        label: this.statusLabel(status),
+        value: status
+    }));
 
     constructor(
         private readonly messageService: MessageService,
@@ -215,14 +230,52 @@ export class AplicacaoNr1IndexComponent implements OnInit {
         return aplicacao.filial?.empresa?.nome || '—';
     }
 
+    statusLabel(status: string): string {
+        const labels: Record<string, string> = {
+            GERADO: 'Gerado',
+            ATIVO: 'Ativo',
+            ENCERRADO: 'Encerrado',
+            CANCELADO: 'Cancelado'
+        };
+        return labels[status] || status;
+    }
+
     statusSeverity(status: string): 'success' | 'info' | 'warning' | 'danger' | 'secondary' {
         const map: Record<string, 'success' | 'info' | 'warning' | 'danger' | 'secondary'> = {
-            GERADO: 'secondary',
-            PENDENTE: 'warning',
-            EM_ANDAMENTO: 'info',
-            CONCLUIDA: 'success',
-            CANCELADA: 'danger'
+            GERADO: 'warning',
+            ATIVO: 'success',
+            ENCERRADO: 'secondary',
+            CANCELADO: 'danger'
         };
         return map[status] || 'secondary';
+    }
+
+    // --- Edição de status ---
+
+    editarStatus(aplicacao: AplicacaoNr1): void {
+        this.aplicacaoEmEdicao = aplicacao;
+        this.novoStatus = (aplicacao.status as AplicacaoStatus) || 'GERADO';
+        this.statusDialog = true;
+    }
+
+    async salvarStatus(): Promise<void> {
+        if (!this.aplicacaoEmEdicao?.id) {
+            return;
+        }
+
+        this.salvandoStatus = true;
+
+        try {
+            await this.aplicacaoService.atualizarStatus(this.aplicacaoEmEdicao.id, this.novoStatus);
+            this.messageService.add({ severity: 'success', summary: 'Sucesso', detail: 'Status atualizado.', life: 3000 });
+            this.statusDialog = false;
+            this.aplicacaoEmEdicao = null;
+            await this.loadAplicacoes();
+        } catch (error) {
+            console.error('Erro ao atualizar status da aplicação:', error);
+            this.messageService.add({ severity: 'error', summary: 'Erro', detail: 'Não foi possível atualizar o status.', life: 3000 });
+        } finally {
+            this.salvandoStatus = false;
+        }
     }
 }
