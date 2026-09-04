@@ -1,0 +1,158 @@
+<p-toast></p-toast>
+
+<div class="grid">
+    <div class="col-12">
+        <div class="card">
+            <p-toolbar styleClass="mb-4">
+                <ng-template pTemplate="left">
+                    <div>
+                        <h5 class="m-0">Aplicações NR-1</h5>
+                        <small class="text-color-secondary">Geração de lotes de aplicação e tokens anônimos de acesso.</small>
+                    </div>
+                </ng-template>
+                <ng-template pTemplate="right">
+                    <button pButton pRipple label="Nova aplicação" icon="pi pi-plus" (click)="openNew()"></button>
+                </ng-template>
+            </p-toolbar>
+
+            <p-table
+                [value]="aplicacoes"
+                [loading]="loading"
+                [paginator]="aplicacoes.length > 10"
+                [rows]="10"
+                [globalFilterFields]="['nome']"
+                responsiveLayout="scroll"
+                styleClass="p-datatable-striped"
+                #dt>
+                <ng-template pTemplate="caption">
+                    <div class="flex justify-content-end">
+                        <span class="p-input-icon-left">
+                            <i class="pi pi-search"></i>
+                            <input pInputText type="text" (input)="dt.filterGlobal($any($event.target).value, 'contains')"
+                                placeholder="Buscar aplicação..." />
+                        </span>
+                    </div>
+                </ng-template>
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th scope="col" pSortableColumn="nome">Nome <p-sortIcon field="nome"></p-sortIcon></th>
+                        <th scope="col" style="width: 180px">Empresa</th>
+                        <th scope="col" style="width: 160px">Filial</th>
+                        <th scope="col" style="width: 130px">Status</th>
+                        <th scope="col" style="width: 180px">Respostas</th>
+                        <th scope="col" style="width: 160px">Criado em</th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-aplicacao>
+                    <tr>
+                        <td class="font-bold">{{ aplicacao.nome || '—' }}</td>
+                        <td>{{ empresaLabel(aplicacao) }}</td>
+                        <td>{{ filialLabel(aplicacao) }}</td>
+                        <td>
+                            <p-tag [value]="aplicacao.status" [severity]="statusSeverity(aplicacao.status)"></p-tag>
+                        </td>
+                        <td>
+                            <div class="flex align-items-center gap-2">
+                                <p-tag [value]="(aplicacao.total_respondidos || 0) + ' / ' + (aplicacao.total_tokens || 0)"
+                                    severity="info"></p-tag>
+                                <small class="text-color-secondary">respondidos</small>
+                            </div>
+                        </td>
+                        <td>{{ aplicacao.created_at ? (aplicacao.created_at | date: 'dd/MM/yyyy HH:mm') : '—' }}</td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr>
+                        <td colspan="6">Nenhuma aplicação gerada.</td>
+                    </tr>
+                </ng-template>
+            </p-table>
+        </div>
+    </div>
+</div>
+
+<!-- Diálogo: gerar novo lote de aplicação -->
+<p-dialog [(visible)]="aplicacaoDialog" [style]="{ width: '640px' }" [modal]="true"
+    header="Nova aplicação NR-1" class="p-fluid">
+    <ng-template pTemplate="content">
+        <div class="field">
+            <label for="nome">Nome da aplicação <span class="text-red-500">*</span></label>
+            <input id="nome" type="text" pInputText [(ngModel)]="nome" autofocus
+                placeholder="Ex.: Diagnóstico Psicossocial 2026 - Produção"
+                [ngClass]="{ 'ng-invalid ng-dirty': submitted && !nome?.trim() }" />
+            <small class="p-error" *ngIf="submitted && !nome?.trim()">O nome é obrigatório.</small>
+        </div>
+
+        <div class="formgrid grid">
+            <div class="field col-12 md:col-6">
+                <label for="empresa">Empresa <span class="text-red-500">*</span></label>
+                <p-dropdown inputId="empresa" [options]="empresaOptions" [(ngModel)]="formEmpresaId"
+                    optionLabel="label" optionValue="value" [filter]="true" filterBy="label"
+                    placeholder="Selecione a empresa" appendTo="body" (onChange)="onEmpresaChange()"
+                    [ngClass]="{ 'ng-invalid ng-dirty': submitted && !formEmpresaId }"></p-dropdown>
+                <small class="p-error" *ngIf="submitted && !formEmpresaId">A empresa é obrigatória.</small>
+            </div>
+            <div class="field col-12 md:col-6">
+                <label for="filial">Filial <span class="text-red-500">*</span></label>
+                <p-dropdown inputId="filial" [options]="filialOptions" [(ngModel)]="filialId"
+                    optionLabel="label" optionValue="value" [filter]="true" filterBy="label"
+                    [placeholder]="formEmpresaId ? 'Selecione a filial' : 'Selecione a empresa primeiro'"
+                    [disabled]="!formEmpresaId" appendTo="body"
+                    [ngClass]="{ 'ng-invalid ng-dirty': submitted && !filialId }"></p-dropdown>
+                <small class="p-error" *ngIf="submitted && !filialId">A filial é obrigatória.</small>
+            </div>
+        </div>
+
+        <div class="formgrid grid">
+            <div class="field col-12 md:col-6">
+                <label for="setor">Setor <span class="text-color-secondary">(opcional)</span></label>
+                <p-dropdown inputId="setor" [options]="setorOptions" [(ngModel)]="setorId"
+                    optionLabel="label" optionValue="value" [filter]="true" filterBy="label" [showClear]="true"
+                    [placeholder]="formEmpresaId ? 'Todos os setores' : 'Selecione a empresa primeiro'"
+                    [disabled]="!formEmpresaId" appendTo="body"></p-dropdown>
+            </div>
+            <div class="field col-12 md:col-6">
+                <label for="cargo">Cargo <span class="text-color-secondary">(opcional)</span></label>
+                <p-dropdown inputId="cargo" [options]="cargoOptions" [(ngModel)]="cargoId"
+                    optionLabel="label" optionValue="value" [filter]="true" filterBy="label" [showClear]="true"
+                    [placeholder]="formEmpresaId ? 'Todos os cargos' : 'Selecione a empresa primeiro'"
+                    [disabled]="!formEmpresaId" appendTo="body"></p-dropdown>
+            </div>
+        </div>
+
+        <div class="field">
+            <label for="quantidade">Quantidade de colaboradores <span class="text-red-500">*</span></label>
+            <p-inputNumber inputId="quantidade" [(ngModel)]="quantidadeColaboradores" [min]="1" [max]="10000"
+                [useGrouping]="false" [showButtons]="true" placeholder="Ex.: 250"
+                [ngClass]="{ 'ng-invalid ng-dirty': submitted && (!quantidadeColaboradores || quantidadeColaboradores < 1) }"></p-inputNumber>
+            <small class="p-error" *ngIf="submitted && (!quantidadeColaboradores || quantidadeColaboradores < 1)">
+                Informe a quantidade de colaboradores (mínimo 1).
+            </small>
+            <small class="text-color-secondary block mt-1">
+                Um token anônimo de acesso será gerado para cada colaborador.
+            </small>
+        </div>
+    </ng-template>
+
+    <ng-template pTemplate="footer">
+        <button pButton pRipple label="Cancelar" icon="pi pi-times" class="p-button-text" (click)="hideDialog()"
+            [disabled]="salvando"></button>
+        <button pButton pRipple label="Gerar tokens" icon="pi pi-bolt" (click)="gerarAplicacao()"
+            [loading]="salvando"></button>
+    </ng-template>
+</p-dialog>
+
+<!-- Diálogo: feedback pós-geração -->
+<p-dialog [(visible)]="resultadoDialog" [modal]="true" [style]="{ width: '460px' }" header="Aplicação gerada com sucesso">
+    <div *ngIf="ultimoResultado" class="text-center py-3">
+        <i class="pi pi-check-circle text-green-500" style="font-size: 3rem"></i>
+        <div class="mt-3 text-xl font-semibold">{{ ultimoResultado.total }} tokens gerados</div>
+        <p class="text-color-secondary mt-2">
+            A aplicação <b>{{ ultimoResultado.nome }}</b> foi criada e os links anônimos de acesso
+            estão prontos para envio aos colaboradores.
+        </p>
+    </div>
+    <ng-template pTemplate="footer">
+        <button pButton pRipple label="Fechar" icon="pi pi-check" class="p-button-text" (click)="resultadoDialog = false"></button>
+    </ng-template>
+</p-dialog>

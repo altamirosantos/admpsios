@@ -19,6 +19,7 @@ import { authGuard } from '../../service/auth.guard';
         { path: 'colaboradores', canActivate: [authGuard], loadChildren: () => import('./colaborador-index/colaborador-index.module').then(m => m.ColaboradorIndexModule) },
         { path: 'setores', canActivate: [authGuard], loadChildren: () => import('./setor-index/setor-index.module').then(m => m.SetorIndexModule) },
         { path: 'cargos', canActivate: [authGuard], loadChildren: () => import('./cargo-index/cargo-index.module').then(m => m.CargoIndexModule) },
+        { path: 'aplicacoes-nr1', canActivate: [authGuard], loadChildren: () => import('./aplicacao-nr1-index/aplicacao-nr1-index.module').then(m => m.AplicacaoNr1IndexModule) },
         { path: 'perguntas-nr1', canActivate: [authGuard], loadChildren: () => import('./pergunta-nr1-index/pergunta-nr1-index.module').then(m => m.PerguntaNr1IndexModule) },
         { path: 'modelos-proposta', canActivate: [authGuard], loadChildren: () => import('./modelo-proposta-index/modelo-proposta-index.module').then(m => m.ModeloPropostaIndexModule) },
         { path: 'servicos-proposta', canActivate: [authGuard], loadChildren: () => import('./servicos-proposta-index/servicos-proposta-index.module').then(m => m.ServicosPropostaIndexModule) },
