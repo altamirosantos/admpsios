@@ -40,7 +40,7 @@
                         <th scope="col" style="width: 150px">Valor</th>
                         <th scope="col" style="width: 130px">Validade</th>
                         <th scope="col" style="width: 170px">Atualizado em</th>
-                        <th scope="col" style="width: 120px">Ações</th>
+                        <th scope="col" style="width: 170px">Ações</th>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-proposta>
@@ -53,6 +53,8 @@
                         <td>{{ proposta.validade ? (proposta.validade | date: 'dd/MM/yyyy') : '—' }}</td>
                         <td>{{ proposta.updated_at ? (proposta.updated_at | date: 'dd/MM/yyyy HH:mm') : '—' }}</td>
                         <td>
+                            <button pButton pRipple icon="pi pi-eye" class="p-button-rounded p-button-help mr-2"
+                                (click)="visualizarPropostaDaGrid(proposta)" pTooltip="Visualizar"></button>
                             <button pButton pRipple icon="pi pi-pencil" class="p-button-rounded p-button-success mr-2"
                                 (click)="editProposta(proposta)" pTooltip="Editar"></button>
                             <button pButton pRipple icon="pi pi-trash" class="p-button-rounded p-button-danger"
@@ -196,10 +198,13 @@
     header="Pré-visualização da proposta" styleClass="preview-dialog" [style]="{ width: '100vw', height: '100vh' }"
     [contentStyle]="{ padding: '0', overflow: 'hidden' }" (onHide)="fecharPreview()">
     <div class="preview-frame-wrap">
-        <iframe *ngIf="previewUrl" [src]="previewUrl" class="preview-frame" title="Pré-visualização da proposta"
-            sandbox="allow-same-origin allow-popups"></iframe>
+        <iframe #previewIframe *ngIf="previewUrl" [src]="previewUrl" class="preview-frame"
+            title="Pré-visualização da proposta"
+            sandbox="allow-same-origin allow-popups allow-modals"></iframe>
     </div>
     <ng-template pTemplate="footer">
+        <button pButton pRipple label="Baixar PDF" icon="pi pi-file-pdf" class="p-button-outlined mr-auto"
+            (click)="baixarPdf()" pTooltip="Abre a impressão do navegador — escolha 'Salvar como PDF'"></button>
         <button pButton pRipple label="Fechar" icon="pi pi-times" class="p-button-text" (click)="fecharPreview()"></button>
     </ng-template>
 </p-dialog>

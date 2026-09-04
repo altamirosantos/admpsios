@@ -468,13 +468,64 @@
     color:var(--lilac);
     font-size:15px;
   }
+  /* Bloco de assinatura com foto */
+  .signature-block{
+    margin-top:44px;
+    display:flex;
+    align-items:center;
+    gap:18px;
+  }
+  .signature-block .photo{
+    width:76px;
+    height:76px;
+    border-radius:50%;
+    object-fit:cover;
+    flex-shrink:0;
+    border:2px solid var(--gold);
+    box-shadow:0 0 0 4px rgba(167,139,196,0.18);
+  }
+  .signature-block .who .name{
+    font-family:'Fraunces', serif;
+    font-size:18px;
+    font-weight:600;
+    color:var(--cream-text);
+    line-height:1.2;
+  }
+  .signature-block .who .role{
+    font-size:12px;
+    letter-spacing:0.16em;
+    text-transform:uppercase;
+    color:var(--gold);
+    margin-top:3px;
+  }
+  .signature-quote{
+    margin-top:28px;
+    font-family:'Fraunces', serif;
+    font-style:italic;
+    color:var(--lilac);
+    font-size:15px;
+    max-width:52ch;
+    line-height:1.5;
+  }
 
   /* ---------- IMPRESSÃO / EXPORTAÇÃO EM PDF ---------- */
   @media print{
-    body{background:#fff; padding:0;}
+    @page{ size:A4; margin:0; }
+    html, body{
+      background:#fff;
+      padding:0;
+      margin:0;
+      -webkit-print-color-adjust:exact;
+      print-color-adjust:exact;
+    }
+    /* garante que fundos e cores (páginas escuras, bloco de preço) saiam no PDF */
+    *{
+      -webkit-print-color-adjust:exact;
+      print-color-adjust:exact;
+    }
     .page{
-      width:auto;
-      min-height:100vh;
+      width:210mm;
+      min-height:297mm;
       margin:0;
       box-shadow:none;
       page-break-after:always;
@@ -678,9 +729,14 @@ empresa.
         E-mail <span class="ph">— anareclefreitas@gmail.com</span>
       </div>
     </div>
-    <div class="signature"> <p class="closing-lead">"Cuidar de pessoas é cuidar do futuro da sua empresa. Vamos transformar cuidado em
-prevenção e desenvolvimento."</p></div>
-    <div class="signature">Psicóloga Ana Reclé</div>
+    <p class="signature-quote">"Cuidar de pessoas é cuidar do futuro da sua empresa. Vamos transformar cuidado em prevenção e desenvolvimento."</p>
+    <div class="signature-block">
+      <img class="photo" alt="Psicóloga Ana Reclé" src="data:image/jpeg;base64,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">
+      <div class="who">
+        <div class="name">Ana Reclé</div>
+        <div class="role">Psicóloga</div>
+      </div>
+    </div>
     <div class="page-frame" style="color:var(--lilac);"><span class="tag">Proposta · NR-1 · ${empresa}</span><span class="num">07 / 07</span></div>
   </section>
 

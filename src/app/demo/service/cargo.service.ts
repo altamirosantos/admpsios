@@ -1,46 +1,36 @@
 import { Injectable } from '@angular/core';
 import { SupabaseService } from './supabase.service';
 
-export interface FilialEmpresaSummary {
+export interface CargoEmpresaSummary {
   id: string;
   nome: string;
 }
 
-export interface Filial {
+export interface Cargo {
   id?: string;
   empresa_id: string;
-  razao_social: string | null;
-  nome_fantasia: string | null;
-  data_fundacao: string | null;
-  cnpj: string | null;
-  email: string | null;
-  total_colaboradores: number | null;
-  empresa?: FilialEmpresaSummary | null;
+  nome: string;
+  empresa?: CargoEmpresaSummary | null;
   created_at?: string | null;
   updated_at?: string | null;
 }
 
-type FilialRow = Omit<Filial, 'empresa'> & {
-  empresa?: FilialEmpresaSummary[] | FilialEmpresaSummary | null;
+type CargoRow = Omit<Cargo, 'empresa'> & {
+  empresa?: CargoEmpresaSummary[] | CargoEmpresaSummary | null;
 };
 
-export type FilialPayload = Omit<Filial, 'id' | 'empresa' | 'created_at' | 'updated_at'>;
+export type CargoPayload = Omit<Cargo, 'id' | 'empresa' | 'created_at' | 'updated_at'>;
 
 @Injectable({
   providedIn: 'root'
 })
-export class FilialService {
-  private readonly table = 'filial';
+export class CargoService {
+  private readonly table = 'cargo';
 
   private readonly selectColumns = `
     id,
     empresa_id,
-    razao_social,
-    nome_fantasia,
-    data_fundacao,
-    cnpj,
-    email,
-    total_colaboradores,
+    nome,
     created_at,
     updated_at,
     empresa:empresa(id, nome)
@@ -48,20 +38,20 @@ export class FilialService {
 
   constructor(private readonly supabaseService: SupabaseService) {}
 
-  async getAll(): Promise<Filial[]> {
+  async getAll(): Promise<Cargo[]> {
     const { data, error } = await this.supabaseService.client
       .from(this.table)
       .select(this.selectColumns)
-      .order('nome_fantasia', { ascending: true, nullsFirst: false });
+      .order('nome', { ascending: true, nullsFirst: false });
 
     if (error) {
       throw error;
     }
 
-    return (data || []).map((item) => this.mapFilial(item as FilialRow));
+    return (data || []).map((item) => this.mapCargo(item as CargoRow));
   }
 
-  async create(payload: FilialPayload): Promise<Filial> {
+  async create(payload: CargoPayload): Promise<Cargo> {
     const now = new Date().toISOString();
 
     const { data, error } = await this.supabaseService.client
@@ -78,10 +68,10 @@ export class FilialService {
       throw error;
     }
 
-    return this.mapFilial(data as FilialRow);
+    return this.mapCargo(data as CargoRow);
   }
 
-  async update(id: string, payload: FilialPayload): Promise<Filial> {
+  async update(id: string, payload: CargoPayload): Promise<Cargo> {
     const { data, error } = await this.supabaseService.client
       .from(this.table)
       .update({
@@ -96,7 +86,7 @@ export class FilialService {
       throw error;
     }
 
-    return this.mapFilial(data as FilialRow);
+    return this.mapCargo(data as CargoRow);
   }
 
   async delete(id: string): Promise<void> {
@@ -110,7 +100,7 @@ export class FilialService {
     }
   }
 
-  private mapFilial(item: FilialRow): Filial {
+  private mapCargo(item: CargoRow): Cargo {
     const relatedEmpresa = Array.isArray(item.empresa)
       ? item.empresa[0] || null
       : item.empresa || null;

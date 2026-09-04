@@ -44,7 +44,8 @@ export class FilialIndexComponent implements OnInit {
             nome_fantasia: null,
             data_fundacao: null,
             cnpj: null,
-            email: null
+            email: null,
+            total_colaboradores: null
         };
     }
 
@@ -118,7 +119,8 @@ export class FilialIndexComponent implements OnInit {
             nome_fantasia: this.filial.nome_fantasia?.trim() || null,
             data_fundacao: this.dataFundacao ? this.formatDate(this.dataFundacao) : null,
             cnpj: this.filial.cnpj?.trim() || null,
-            email: this.filial.email?.trim() || null
+            email: this.filial.email?.trim() || null,
+            total_colaboradores: this.filial.total_colaboradores ?? null
         };
 
         try {

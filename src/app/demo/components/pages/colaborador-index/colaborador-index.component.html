@@ -1,0 +1,146 @@
+<p-toast></p-toast>
+
+<div class="grid">
+    <div class="col-12">
+        <div class="card">
+            <p-toolbar styleClass="mb-4">
+                <ng-template pTemplate="left">
+                    <div>
+                        <h5 class="m-0">Colaboradores</h5>
+                        <small class="text-color-secondary">Cadastro da tabela <strong>colaborador</strong>.</small>
+                    </div>
+                </ng-template>
+                <ng-template pTemplate="right">
+                    <button pButton pRipple label="Novo colaborador" icon="pi pi-plus" (click)="openNew()"></button>
+                </ng-template>
+            </p-toolbar>
+
+            <!-- Filtros: empresa -> filial (dependente) -->
+            <div class="formgrid grid align-items-end filtros-box mb-3">
+                <div class="field col-12 md:col-5">
+                    <label for="filtroEmpresa">Filtrar por empresa</label>
+                    <p-dropdown inputId="filtroEmpresa" [options]="empresaOptions" [(ngModel)]="filtroEmpresaId"
+                        optionLabel="label" optionValue="value" [filter]="true" filterBy="label" [showClear]="true"
+                        placeholder="Todas as empresas" appendTo="body"
+                        (onChange)="onFiltroEmpresaChange()"></p-dropdown>
+                </div>
+                <div class="field col-12 md:col-5">
+                    <label for="filtroFilial">Filtrar por filial</label>
+                    <p-dropdown inputId="filtroFilial" [options]="filtroFilialOptions" [(ngModel)]="filtroFilialId"
+                        optionLabel="label" optionValue="value" [filter]="true" filterBy="label" [showClear]="true"
+                        [placeholder]="filtroEmpresaId ? 'Todas as filiais da empresa' : 'Selecione uma empresa primeiro'"
+                        [disabled]="!filtroEmpresaId" appendTo="body"></p-dropdown>
+                </div>
+                <div class="field col-12 md:col-2">
+                    <button pButton pRipple type="button" label="Limpar" icon="pi pi-filter-slash"
+                        class="p-button-outlined w-full" (click)="limparFiltros()"
+                        [disabled]="!filtroEmpresaId && !filtroFilialId"></button>
+                </div>
+            </div>
+
+            <p-table
+                [value]="colaboradoresFiltrados"
+                [loading]="loading"
+                [paginator]="colaboradoresFiltrados.length > 10"
+                [rows]="10"
+                [globalFilterFields]="['nome', 'email']"
+                responsiveLayout="scroll"
+                styleClass="p-datatable-striped"
+                #dt>
+                <ng-template pTemplate="caption">
+                    <div class="flex justify-content-end">
+                        <span class="p-input-icon-left">
+                            <i class="pi pi-search"></i>
+                            <input pInputText type="text" (input)="dt.filterGlobal($any($event.target).value, 'contains')"
+                                placeholder="Buscar colaborador..." />
+                        </span>
+                    </div>
+                </ng-template>
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th scope="col" pSortableColumn="nome">Nome <p-sortIcon field="nome"></p-sortIcon></th>
+                        <th scope="col" style="width: 240px">E-mail</th>
+                        <th scope="col" style="width: 200px">Empresa</th>
+                        <th scope="col" style="width: 200px">Filial</th>
+                        <th scope="col" style="width: 120px">Ações</th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-colaborador>
+                    <tr>
+                        <td class="font-bold">{{ colaborador.nome || '—' }}</td>
+                        <td>{{ colaborador.email || '—' }}</td>
+                        <td>{{ empresaLabel(colaborador) }}</td>
+                        <td>{{ filialLabel(colaborador) }}</td>
+                        <td>
+                            <button pButton pRipple icon="pi pi-pencil" class="p-button-rounded p-button-success mr-2"
+                                (click)="editColaborador(colaborador)" pTooltip="Editar"></button>
+                            <button pButton pRipple icon="pi pi-trash" class="p-button-rounded p-button-danger"
+                                (click)="confirmDeleteColaborador(colaborador)" pTooltip="Excluir"></button>
+                        </td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr>
+                        <td colspan="5">Nenhum colaborador encontrado.</td>
+                    </tr>
+                </ng-template>
+            </p-table>
+        </div>
+    </div>
+</div>
+
+<p-dialog [(visible)]="colaboradorDialog" [style]="{ width: '560px' }" [modal]="true"
+    [header]="colaborador.id ? 'Editar colaborador' : 'Novo colaborador'" class="p-fluid">
+    <ng-template pTemplate="content">
+        <div class="formgrid grid">
+            <div class="field col-12 md:col-6">
+                <label for="empresa">Empresa <span class="text-red-500">*</span></label>
+                <p-dropdown inputId="empresa" [options]="empresaOptions" [(ngModel)]="formEmpresaId"
+                    optionLabel="label" optionValue="value" [filter]="true" filterBy="label"
+                    placeholder="Selecione a empresa" appendTo="body"
+                    (onChange)="onFormEmpresaChange()"
+                    [ngClass]="{ 'ng-invalid ng-dirty': submitted && !formEmpresaId }"></p-dropdown>
+                <small class="p-error" *ngIf="submitted && !formEmpresaId">A empresa é obrigatória.</small>
+            </div>
+            <div class="field col-12 md:col-6">
+                <label for="filial">Filial <span class="text-red-500">*</span></label>
+                <p-dropdown inputId="filial" [options]="filialFormOptions" [(ngModel)]="colaborador.filial_id"
+                    optionLabel="label" optionValue="value" [filter]="true" filterBy="label"
+                    [placeholder]="formEmpresaId ? 'Selecione a filial' : 'Selecione a empresa primeiro'"
+                    [disabled]="!formEmpresaId" appendTo="body"
+                    [ngClass]="{ 'ng-invalid ng-dirty': submitted && !colaborador.filial_id }"></p-dropdown>
+                <small class="p-error" *ngIf="submitted && !colaborador.filial_id">A filial é obrigatória.</small>
+            </div>
+        </div>
+
+        <div class="field">
+            <label for="nome">Nome <span class="text-red-500">*</span></label>
+            <input id="nome" type="text" pInputText [(ngModel)]="colaborador.nome" autofocus
+                [ngClass]="{ 'ng-invalid ng-dirty': submitted && !colaborador.nome?.trim() }" />
+            <small class="p-error" *ngIf="submitted && !colaborador.nome?.trim()">O nome é obrigatório.</small>
+        </div>
+
+        <div class="field">
+            <label for="email">E-mail</label>
+            <input id="email" type="email" pInputText [(ngModel)]="colaborador.email" placeholder="colaborador@empresa.com"
+                [ngClass]="{ 'ng-invalid ng-dirty': submitted && colaborador.email && !isValidEmail(colaborador.email) }" />
+            <small class="p-error" *ngIf="submitted && colaborador.email && !isValidEmail(colaborador.email)">Informe um e-mail válido.</small>
+        </div>
+    </ng-template>
+
+    <ng-template pTemplate="footer">
+        <button pButton pRipple label="Cancelar" icon="pi pi-times" class="p-button-text" (click)="hideDialog()"></button>
+        <button pButton pRipple label="Salvar" icon="pi pi-check" class="p-button-text" (click)="saveColaborador()"></button>
+    </ng-template>
+</p-dialog>
+
+<p-dialog [(visible)]="deleteColaboradorDialog" header="Confirmação" [modal]="true" [style]="{ width: '450px' }">
+    <div class="flex align-items-center justify-content-center">
+        <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem"></i>
+        <span *ngIf="colaborador">Confirma exclusão do colaborador <b>{{ colaborador.nome }}</b>?</span>
+    </div>
+    <ng-template pTemplate="footer">
+        <button pButton pRipple icon="pi pi-times" class="p-button-text" label="Não" (click)="deleteColaboradorDialog = false"></button>
+        <button pButton pRipple icon="pi pi-check" class="p-button-text" label="Sim" (click)="deleteColaborador()"></button>
+    </ng-template>
+</p-dialog>

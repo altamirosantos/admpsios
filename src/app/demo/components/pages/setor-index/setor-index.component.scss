@@ -1,0 +1,12 @@
+:host ::ng-deep {
+    .p-dropdown {
+        width: 100%;
+    }
+}
+
+.filtros-box {
+    padding: 1rem;
+    border: 1px solid var(--surface-200);
+    border-radius: 8px;
+    background: var(--surface-50);
+}

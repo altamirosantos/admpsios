@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { MessageService } from 'primeng/api';
 import { Empresa, EmpresaService } from 'src/app/demo/service/empresa.service';
@@ -43,6 +43,9 @@ export class PropostaEmpresaIndexComponent implements OnInit, OnDestroy {
     previewDialog = false;
     previewUrl: SafeResourceUrl | null = null;
     private previewObjectUrl: string | null = null;
+
+    /** Referência ao iframe da prévia (usado para acionar a impressão/PDF). */
+    @ViewChild('previewIframe') previewIframe?: ElementRef<HTMLIFrameElement>;
 
     /** Modelos carregados (com parametros_schema) para derivar os campos de parâmetro. */
     private modelos: ModeloProposta[] = [];
@@ -273,6 +276,42 @@ export class PropostaEmpresaIndexComponent implements OnInit, OnDestroy {
         this.previewDialog = true;
     }
 
+    /**
+     * Visualiza uma proposta já salva a partir da listagem: prepara o estado
+     * (empresa, modelo/parâmetros, validade, serviços) e abre a prévia em tela cheia.
+     */
+    async visualizarPropostaDaGrid(proposta: PropostaEmpresa): Promise<void> {
+        const modelo = this.modelos.find((m) => m.id === proposta.modelo_proposta_id);
+
+        if (!modelo) {
+            this.messageService.add({ severity: 'warn', summary: 'Atenção', detail: 'Esta proposta não possui um modelo ativo vinculado para pré-visualizar.', life: 4000 });
+            return;
+        }
+
+        if (!modelo.content?.trim()) {
+            this.messageService.add({ severity: 'warn', summary: 'Atenção', detail: 'O modelo vinculado não possui conteúdo para pré-visualizar.', life: 3500 });
+            return;
+        }
+
+        // reconstrói o estado usado por montarTokens() a partir do registro salvo
+        this.proposta = {
+            ...proposta,
+            parametros: { ...(proposta.parametros ?? {}) }
+        };
+        this.validade = proposta.validade ? this.parseDate(proposta.validade) : null;
+        this.parametrosDefinicao = modelo.parametros_schema.filter((def) => !this.isAutoParametro(def.chave));
+
+        // carrega os serviços vinculados (para o token ${servicos})
+        this.servicoItens = [];
+        if (proposta.id) {
+            await this.loadServicoItens(proposta.id);
+        }
+
+        const html = this.aplicarTokens(modelo.content, this.montarTokens());
+        this.gerarPreview(html);
+        this.previewDialog = true;
+    }
+
     /** Monta o mapa de tokens (chave -> valor exibível) com base nos campos preenchidos. */
     private montarTokens(): Record<string, string> {
         const tokens: Record<string, string> = {};
@@ -362,6 +401,28 @@ export class PropostaEmpresaIndexComponent implements OnInit, OnDestroy {
         const blob = new Blob([conteudo], { type: 'text/html;charset=utf-8' });
         this.previewObjectUrl = URL.createObjectURL(blob);
         this.previewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.previewObjectUrl);
+    }
+
+    /**
+     * Aciona a impressão do documento renderizado no iframe.
+     * O usuário escolhe "Salvar como PDF" no diálogo do navegador — sem backend/Supabase.
+     */
+    baixarPdf(): void {
+        const iframe = this.previewIframe?.nativeElement;
+        const win = iframe?.contentWindow;
+
+        if (!win) {
+            this.messageService.add({ severity: 'warn', summary: 'Atenção', detail: 'A pré-visualização ainda está carregando. Tente novamente.', life: 3000 });
+            return;
+        }
+
+        try {
+            win.focus();
+            win.print();
+        } catch (error) {
+            console.error('Erro ao acionar a impressão da proposta:', error);
+            this.messageService.add({ severity: 'error', summary: 'Erro', detail: 'Não foi possível abrir a impressão. Verifique o navegador.', life: 3000 });
+        }
     }
 
     fecharPreview(): void {

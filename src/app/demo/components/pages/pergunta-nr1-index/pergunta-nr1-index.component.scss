@@ -1,0 +1,30 @@
+:host ::ng-deep {
+    .p-inputnumber {
+        width: 100%;
+    }
+
+    textarea {
+        width: 100%;
+        resize: vertical;
+    }
+}
+
+.opcoes-box {
+    padding: 1rem;
+    border: 1px solid var(--surface-200);
+    border-radius: 8px;
+    background: var(--surface-50);
+}
+
+.opcoes-header {
+    padding: 0 0.5rem;
+}
+
+.opcao-row {
+    padding: 0.25rem 0.5rem;
+    border-bottom: 1px dashed var(--surface-200);
+
+    &:last-of-type {
+        border-bottom: none;
+    }
+}

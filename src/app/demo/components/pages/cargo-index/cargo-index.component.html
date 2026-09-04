@@ -1,0 +1,115 @@
+<p-toast></p-toast>
+
+<div class="grid">
+    <div class="col-12">
+        <div class="card">
+            <p-toolbar styleClass="mb-4">
+                <ng-template pTemplate="left">
+                    <div>
+                        <h5 class="m-0">Cargos</h5>
+                        <small class="text-color-secondary">Cadastro da tabela <strong>cargo</strong>.</small>
+                    </div>
+                </ng-template>
+                <ng-template pTemplate="right">
+                    <button pButton pRipple label="Novo cargo" icon="pi pi-plus" (click)="openNew()"></button>
+                </ng-template>
+            </p-toolbar>
+
+            <!-- Filtro por empresa -->
+            <div class="formgrid grid align-items-end filtros-box mb-3">
+                <div class="field col-12 md:col-6">
+                    <label for="filtroEmpresa">Filtrar por empresa</label>
+                    <p-dropdown inputId="filtroEmpresa" [options]="empresaOptions" [(ngModel)]="filtroEmpresaId"
+                        optionLabel="label" optionValue="value" [filter]="true" filterBy="label" [showClear]="true"
+                        placeholder="Todas as empresas" appendTo="body"></p-dropdown>
+                </div>
+                <div class="field col-12 md:col-2">
+                    <button pButton pRipple type="button" label="Limpar" icon="pi pi-filter-slash"
+                        class="p-button-outlined w-full" (click)="limparFiltros()" [disabled]="!filtroEmpresaId"></button>
+                </div>
+            </div>
+
+            <p-table
+                [value]="cargosFiltrados"
+                [loading]="loading"
+                [paginator]="cargosFiltrados.length > 10"
+                [rows]="10"
+                [globalFilterFields]="['nome']"
+                responsiveLayout="scroll"
+                styleClass="p-datatable-striped"
+                #dt>
+                <ng-template pTemplate="caption">
+                    <div class="flex justify-content-end">
+                        <span class="p-input-icon-left">
+                            <i class="pi pi-search"></i>
+                            <input pInputText type="text" (input)="dt.filterGlobal($any($event.target).value, 'contains')"
+                                placeholder="Buscar cargo..." />
+                        </span>
+                    </div>
+                </ng-template>
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th scope="col" pSortableColumn="nome">Nome <p-sortIcon field="nome"></p-sortIcon></th>
+                        <th scope="col" style="width: 260px">Empresa</th>
+                        <th scope="col" style="width: 120px">Ações</th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-cargo>
+                    <tr>
+                        <td class="font-bold">{{ cargo.nome || '—' }}</td>
+                        <td>{{ empresaLabel(cargo) }}</td>
+                        <td>
+                            <button pButton pRipple icon="pi pi-pencil" class="p-button-rounded p-button-success mr-2"
+                                (click)="editCargo(cargo)" pTooltip="Editar"></button>
+                            <button pButton pRipple icon="pi pi-trash" class="p-button-rounded p-button-danger"
+                                (click)="confirmDeleteCargo(cargo)" pTooltip="Excluir"></button>
+                        </td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr>
+                        <td colspan="3">Nenhum cargo encontrado.</td>
+                    </tr>
+                </ng-template>
+            </p-table>
+        </div>
+    </div>
+</div>
+
+<p-dialog [(visible)]="cargoDialog" [style]="{ width: '520px' }" [modal]="true"
+    [header]="cargo.id ? 'Editar cargo' : 'Novo cargo'" class="p-fluid">
+    <ng-template pTemplate="content">
+        <div class="field">
+            <label for="empresa">Empresa <span class="text-red-500">*</span></label>
+            <p-dropdown inputId="empresa" [options]="empresaOptions" [(ngModel)]="cargo.empresa_id"
+                optionLabel="label" optionValue="value" [filter]="true" filterBy="label"
+                placeholder="Selecione a empresa" appendTo="body"
+                [ngClass]="{ 'ng-invalid ng-dirty': submitted && !cargo.empresa_id }"></p-dropdown>
+            <small class="p-error" *ngIf="submitted && !cargo.empresa_id">A empresa é obrigatória.</small>
+        </div>
+
+        <div class="field">
+            <label for="nome">Nome <span class="text-red-500">*</span></label>
+            <input id="nome" type="text" pInputText [(ngModel)]="cargo.nome" autofocus
+                placeholder="Ex.: Operador de máquina"
+                [ngClass]="{ 'ng-invalid ng-dirty': submitted && !cargo.nome?.trim() }" />
+            <small class="p-error" *ngIf="submitted && !cargo.nome?.trim()">O nome é obrigatório.</small>
+        </div>
+    </ng-template>
+
+    <ng-template pTemplate="footer">
+        <button pButton pRipple label="Cancelar" icon="pi pi-times" class="p-button-text" (click)="hideDialog()"></button>
+        <button pButton pRipple label="Salvar" icon="pi pi-check" class="p-button-text" (click)="saveCargo()"></button>
+    </ng-template>
+</p-dialog>
+
+<p-dialog [(visible)]="deleteCargoDialog" header="Confirmação" [modal]="true" [style]="{ width: '450px' }">
+    <div class="flex align-items-center justify-content-center">
+        <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem"></i>
+        <span *ngIf="cargo">Confirma exclusão do cargo <b>{{ cargo.nome }}</b>?</span>
+    </div>
+    <ng-template pTemplate="footer">
+        <button pButton pRipple icon="pi pi-times" class="p-button-text" label="Não" (click)="deleteCargoDialog = false"></button>
+        <button pButton pRipple icon="pi pi-check" class="p-button-text" label="Sim" (click)="deleteCargo()"></button>
+    </ng-template>
+</p-dialog>
