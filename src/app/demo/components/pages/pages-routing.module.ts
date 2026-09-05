@@ -24,6 +24,7 @@ import { authGuard } from '../../service/auth.guard';
         { path: 'modelos-proposta', canActivate: [authGuard], loadChildren: () => import('./modelo-proposta-index/modelo-proposta-index.module').then(m => m.ModeloPropostaIndexModule) },
         { path: 'servicos-proposta', canActivate: [authGuard], loadChildren: () => import('./servicos-proposta-index/servicos-proposta-index.module').then(m => m.ServicosPropostaIndexModule) },
         { path: 'propostas', canActivate: [authGuard], loadChildren: () => import('./proposta-empresa-index/proposta-empresa-index.module').then(m => m.PropostaEmpresaIndexModule) },
+        { path: 'contratos', canActivate: [authGuard], loadChildren: () => import('./contrato-empresa-index/contrato-empresa-index.module').then(m => m.ContratoEmpresaIndexModule) },
         { path: 'termometro', canActivate: [authGuard], loadChildren: () => import('./termometro-index/termometro-index.module').then(m => m.TermometroIndexModule)  },
         { path: '**', redirectTo: '/notfound' },
 

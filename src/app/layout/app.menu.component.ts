@@ -35,9 +35,10 @@ export class AppMenuComponent implements OnInit {
                     { label: 'Cargos', icon: 'pi pi-fw pi-id-card', routerLink: ['/pages/cargos'] },
                     { label: 'Perguntas NR-1', icon: 'pi pi-fw pi-question-circle', routerLink: ['/pages/perguntas-nr1'] },
                     { label: 'Aplicações NR-1', icon: 'pi pi-fw pi-bolt', routerLink: ['/pages/aplicacoes-nr1'] },
-                    { label: 'Modelos de Proposta', icon: 'pi pi-fw pi-file', routerLink: ['/pages/modelos-proposta'] },
+                    { label: 'Modelos (Proposta/Contrato)', icon: 'pi pi-fw pi-file', routerLink: ['/pages/modelos-proposta'] },
                     { label: 'Serviços de Proposta', icon: 'pi pi-fw pi-briefcase', routerLink: ['/pages/servicos-proposta'] },
                     { label: 'Propostas', icon: 'pi pi-fw pi-send', routerLink: ['/pages/propostas'] },
+                    { label: 'Contratos', icon: 'pi pi-fw pi-file-edit', routerLink: ['/pages/contratos'] },
                     { label: 'Resources', icon: 'pi pi-fw pi-folder-open', routerLink: ['/pages/resources'] },
                     //{ label: 'Termometro', icon: 'pi pi-fw pi-id-card', routerLink: ['/pages/termometro'] },
                 ]

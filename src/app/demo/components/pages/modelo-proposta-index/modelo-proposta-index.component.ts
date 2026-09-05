@@ -6,22 +6,29 @@ import { EditorState } from '@codemirror/state';
 import { EditorView, basicSetup } from 'codemirror';
 import { MessageService } from 'primeng/api';
 import {
-    MODELO_PROPOSTA_STATUS,
-    ModeloProposta,
-    ModeloPropostaService,
-    ModeloPropostaStatus,
+    MODELO_STATUS,
+    MODELO_TIPO,
+    Modelo,
+    ModeloService,
+    ModeloStatus,
+    ModeloTipo,
     ParametroSchema,
     ParametroTipo
-} from 'src/app/demo/service/modelo-proposta.service';
+} from 'src/app/demo/service/modelo.service';
 
 interface StatusOption {
     label: string;
-    value: ModeloPropostaStatus;
+    value: ModeloStatus;
 }
 
 interface TipoOption {
     label: string;
     value: ParametroTipo;
+}
+
+interface ModeloTipoOption {
+    label: string;
+    value: ModeloTipo;
 }
 
 @Component({
@@ -31,24 +38,30 @@ interface TipoOption {
     providers: [MessageService]
 })
 export class ModeloPropostaIndexComponent implements OnInit, AfterViewInit, OnDestroy {
-    modelos: ModeloProposta[] = [];
+    modelos: Modelo[] = [];
     modeloDialog = false;
     deleteModeloDialog = false;
     loading = false;
     submitted = false;
 
-    modelo: ModeloProposta = this.createEmptyModelo();
+    modelo: Modelo = this.createEmptyModelo();
 
-    readonly statusOptions: StatusOption[] = MODELO_PROPOSTA_STATUS.map((status) => ({
+    readonly statusOptions: StatusOption[] = MODELO_STATUS.map((status) => ({
         label: this.statusLabel(status),
         value: status
+    }));
+
+    readonly modeloTipoOptions: ModeloTipoOption[] = MODELO_TIPO.map((tipo) => ({
+        label: this.tipoModeloLabel(tipo),
+        value: tipo
     }));
 
     readonly tipoOptions: TipoOption[] = [
         { label: 'Texto', value: 'texto' },
         { label: 'Número', value: 'numero' },
         { label: 'Data', value: 'data' },
-        { label: 'Moeda', value: 'moeda' }
+        { label: 'Moeda', value: 'moeda' },
+        { label: 'Booleano (bloco liga/desliga)', value: 'booleano' }
     ];
 
     /** Container do editor CodeMirror. */
@@ -62,7 +75,7 @@ export class ModeloPropostaIndexComponent implements OnInit, AfterViewInit, OnDe
 
     constructor(
         private readonly messageService: MessageService,
-        private readonly modeloPropostaService: ModeloPropostaService,
+        private readonly modeloService: ModeloService,
         private readonly sanitizer: DomSanitizer
     ) {}
 
@@ -79,10 +92,11 @@ export class ModeloPropostaIndexComponent implements OnInit, AfterViewInit, OnDe
         this.revokePreview();
     }
 
-    createEmptyModelo(): ModeloProposta {
+    createEmptyModelo(): Modelo {
         return {
             nome: null,
             status: 'ATIVO',
+            tipo: 'PROPOSTA',
             content: null,
             parametros_schema: []
         };
@@ -92,7 +106,7 @@ export class ModeloPropostaIndexComponent implements OnInit, AfterViewInit, OnDe
         this.loading = true;
 
         try {
-            this.modelos = await this.modeloPropostaService.getAll();
+            this.modelos = await this.modeloService.getAll();
         } catch (error) {
             console.error('Erro ao carregar modelos de proposta:', error);
             this.messageService.add({ severity: 'error', summary: 'Erro', detail: 'Não foi possível carregar os modelos de proposta.', life: 3000 });
@@ -107,7 +121,7 @@ export class ModeloPropostaIndexComponent implements OnInit, AfterViewInit, OnDe
         this.modeloDialog = true;
     }
 
-    editModelo(modelo: ModeloProposta): void {
+    editModelo(modelo: Modelo): void {
         this.modelo = {
             ...modelo,
             parametros_schema: modelo.parametros_schema.map((param) => ({ ...param }))
@@ -276,7 +290,7 @@ export class ModeloPropostaIndexComponent implements OnInit, AfterViewInit, OnDe
         this.previewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.previewObjectUrl);
     }
 
-    previewFromGrid(modelo: ModeloProposta): void {
+    previewFromGrid(modelo: Modelo): void {
         this.gerarPreview(modelo.content || '');
         this.previewDialog = true;
     }
@@ -316,6 +330,7 @@ export class ModeloPropostaIndexComponent implements OnInit, AfterViewInit, OnDe
         const payload = {
             nome: this.modelo.nome.trim(),
             status: this.modelo.status,
+            tipo: this.modelo.tipo,
             content: this.modelo.content?.trim() || null,
             parametros_schema: this.modelo.parametros_schema.map((p) => ({
                 chave: p.chave.trim(),
@@ -326,11 +341,11 @@ export class ModeloPropostaIndexComponent implements OnInit, AfterViewInit, OnDe
 
         try {
             if (this.modelo.id) {
-                await this.modeloPropostaService.update(this.modelo.id, payload);
-                this.messageService.add({ severity: 'success', summary: 'Sucesso', detail: 'Modelo de proposta atualizado.', life: 3000 });
+                await this.modeloService.update(this.modelo.id, payload);
+                this.messageService.add({ severity: 'success', summary: 'Sucesso', detail: 'Modelo atualizado.', life: 3000 });
             } else {
-                await this.modeloPropostaService.create(payload);
-                this.messageService.add({ severity: 'success', summary: 'Sucesso', detail: 'Modelo de proposta criado.', life: 3000 });
+                await this.modeloService.create(payload);
+                this.messageService.add({ severity: 'success', summary: 'Sucesso', detail: 'Modelo criado.', life: 3000 });
             }
 
             this.modeloDialog = false;
@@ -338,12 +353,12 @@ export class ModeloPropostaIndexComponent implements OnInit, AfterViewInit, OnDe
             this.modelo = this.createEmptyModelo();
             await this.loadModelos();
         } catch (error) {
-            console.error('Erro ao salvar modelo de proposta:', error);
-            this.messageService.add({ severity: 'error', summary: 'Erro', detail: 'Não foi possível salvar o modelo de proposta.', life: 3000 });
+            console.error('Erro ao salvar modelo:', error);
+            this.messageService.add({ severity: 'error', summary: 'Erro', detail: 'Não foi possível salvar o modelo.', life: 3000 });
         }
     }
 
-    confirmDeleteModelo(modelo: ModeloProposta): void {
+    confirmDeleteModelo(modelo: Modelo): void {
         this.modelo = { ...modelo };
         this.deleteModeloDialog = true;
     }
@@ -354,8 +369,8 @@ export class ModeloPropostaIndexComponent implements OnInit, AfterViewInit, OnDe
         }
 
         try {
-            await this.modeloPropostaService.delete(this.modelo.id);
-            this.messageService.add({ severity: 'success', summary: 'Sucesso', detail: 'Modelo de proposta removido.', life: 3000 });
+            await this.modeloService.delete(this.modelo.id);
+            this.messageService.add({ severity: 'success', summary: 'Sucesso', detail: 'Modelo removido.', life: 3000 });
             this.deleteModeloDialog = false;
             this.modelo = this.createEmptyModelo();
             await this.loadModelos();
@@ -384,19 +399,31 @@ export class ModeloPropostaIndexComponent implements OnInit, AfterViewInit, OnDe
         return text.length > 90 ? `${text.substring(0, 90)}…` : text;
     }
 
-    statusLabel(status: ModeloPropostaStatus): string {
-        const labels: Record<ModeloPropostaStatus, string> = {
+    statusLabel(status: ModeloStatus): string {
+        const labels: Record<ModeloStatus, string> = {
             ATIVO: 'Ativo',
             INATIVO: 'Inativo'
         };
         return labels[status] || status;
     }
 
-    statusSeverity(status: ModeloPropostaStatus): 'success' | 'info' | 'warning' | 'danger' | 'secondary' {
-        const severities: Record<ModeloPropostaStatus, 'success' | 'info' | 'warning' | 'danger' | 'secondary'> = {
+    statusSeverity(status: ModeloStatus): 'success' | 'info' | 'warning' | 'danger' | 'secondary' {
+        const severities: Record<ModeloStatus, 'success' | 'info' | 'warning' | 'danger' | 'secondary'> = {
             ATIVO: 'success',
             INATIVO: 'secondary'
         };
         return severities[status] || 'secondary';
+    }
+
+    tipoModeloLabel(tipo: ModeloTipo): string {
+        const labels: Record<ModeloTipo, string> = {
+            PROPOSTA: 'Proposta',
+            CONTRATO: 'Contrato'
+        };
+        return labels[tipo] || tipo;
+    }
+
+    tipoModeloSeverity(tipo: ModeloTipo): 'success' | 'info' | 'warning' | 'danger' | 'secondary' {
+        return tipo === 'CONTRATO' ? 'info' : 'secondary';
     }
 }

@@ -6,8 +6,8 @@
             <p-toolbar styleClass="mb-4">
                 <ng-template pTemplate="left">
                     <div>
-                        <h5 class="m-0">Modelos de Proposta</h5>
-                        <small class="text-color-secondary">Cadastro da tabela <strong>modelo_proposta</strong>.</small>
+                        <h5 class="m-0">Modelos (Proposta / Contrato)</h5>
+                        <small class="text-color-secondary">Cadastro da tabela <strong>modelo</strong>.</small>
                     </div>
                 </ng-template>
                 <ng-template pTemplate="right">
@@ -25,6 +25,7 @@
                 <ng-template pTemplate="header">
                     <tr>
                         <th scope="col">Nome</th>
+                        <th scope="col" style="width: 120px">Tipo</th>
                         <th scope="col" style="width: 140px">Status</th>
                         <th scope="col" style="width: 140px">Parâmetros</th>
                         <th scope="col" style="width: 170px">Atualizado em</th>
@@ -34,6 +35,9 @@
                 <ng-template pTemplate="body" let-modelo>
                     <tr>
                         <td class="font-bold">{{ modelo.nome || '(sem nome)' }}</td>
+                        <td>
+                            <p-tag [value]="tipoModeloLabel(modelo.tipo)" [severity]="tipoModeloSeverity(modelo.tipo)"></p-tag>
+                        </td>
                         <td>
                             <p-tag [value]="statusLabel(modelo.status)" [severity]="statusSeverity(modelo.status)"></p-tag>
                         </td>
@@ -51,7 +55,7 @@
                 </ng-template>
                 <ng-template pTemplate="emptymessage">
                     <tr>
-                        <td colspan="5">Nenhum modelo de proposta cadastrado.</td>
+                        <td colspan="6">Nenhum modelo cadastrado.</td>
                     </tr>
                 </ng-template>
             </p-table>
@@ -71,6 +75,12 @@
                     <input id="nome" type="text" pInputText [(ngModel)]="modelo.nome" placeholder="Ex.: Proposta NR-1 padrão"
                         [ngClass]="{ 'ng-invalid ng-dirty': submitted && !modelo.nome?.trim() }" />
                     <small class="p-error" *ngIf="submitted && !modelo.nome?.trim()">O nome é obrigatório.</small>
+                </div>
+
+                <div class="field mb-3">
+                    <label for="tipoModelo">Tipo de documento</label>
+                    <p-dropdown inputId="tipoModelo" [options]="modeloTipoOptions" [(ngModel)]="modelo.tipo"
+                        optionLabel="label" optionValue="value" appendTo="body"></p-dropdown>
                 </div>
 
                 <div class="flex align-items-center justify-content-between mb-2">

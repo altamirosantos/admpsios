@@ -14,13 +14,13 @@ import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
 import { ToolbarModule } from 'primeng/toolbar';
 import { TooltipModule } from 'primeng/tooltip';
-import { PropostaEmpresaIndexRoutingModule } from './proposta-empresa-index-routing.module';
-import { PropostaEmpresaIndexComponent } from './proposta-empresa-index.component';
+import { ContratoEmpresaIndexRoutingModule } from './contrato-empresa-index-routing.module';
+import { ContratoEmpresaIndexComponent } from './contrato-empresa-index.component';
 
 @NgModule({
     imports: [
         CommonModule,
-        PropostaEmpresaIndexRoutingModule,
+        ContratoEmpresaIndexRoutingModule,
         FormsModule,
         TableModule,
         ButtonModule,
@@ -36,6 +36,6 @@ import { PropostaEmpresaIndexComponent } from './proposta-empresa-index.componen
         TagModule,
         TooltipModule
     ],
-    declarations: [PropostaEmpresaIndexComponent]
+    declarations: [ContratoEmpresaIndexComponent]
 })
-export class PropostaEmpresaIndexModule { }
+export class ContratoEmpresaIndexModule { }

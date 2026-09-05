@@ -3,11 +3,11 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { MessageService } from 'primeng/api';
 import { Empresa, EmpresaService } from 'src/app/demo/service/empresa.service';
 import {
-    ModeloProposta,
-    ModeloPropostaService,
+    Modelo,
+    ModeloService,
     ParametroSchema,
     ParametroTipo
-} from 'src/app/demo/service/modelo-proposta.service';
+} from 'src/app/demo/service/modelo.service';
 import {
     PROPOSTA_STATUS,
     PropostaEmpresa,
@@ -48,7 +48,7 @@ export class PropostaEmpresaIndexComponent implements OnInit, OnDestroy {
     @ViewChild('previewIframe') previewIframe?: ElementRef<HTMLIFrameElement>;
 
     /** Modelos carregados (com parametros_schema) para derivar os campos de parâmetro. */
-    private modelos: ModeloProposta[] = [];
+    private modelos: Modelo[] = [];
 
     /** Definição dos parâmetros do modelo selecionado (para renderizar os campos). */
     parametrosDefinicao: ParametroSchema[] = [];
@@ -82,7 +82,7 @@ export class PropostaEmpresaIndexComponent implements OnInit, OnDestroy {
         private readonly messageService: MessageService,
         private readonly propostaService: PropostaEmpresaService,
         private readonly empresaService: EmpresaService,
-        private readonly modeloPropostaService: ModeloPropostaService,
+        private readonly modeloService: ModeloService,
         private readonly servicosService: ServicosPropostaService,
         private readonly servicoPropostaEmpresaService: ServicoPropostaEmpresaService,
         private readonly sanitizer: DomSanitizer
@@ -100,7 +100,7 @@ export class PropostaEmpresaIndexComponent implements OnInit, OnDestroy {
     createEmptyProposta(): PropostaEmpresa {
         return {
             empresa_id: '',
-            modelo_proposta_id: null,
+            modelo_id: null,
             status: 'RASCUNHO',
             validade: null,
             vigencia: null,
@@ -126,7 +126,7 @@ export class PropostaEmpresaIndexComponent implements OnInit, OnDestroy {
         try {
             const [empresas, modelos, servicos] = await Promise.all([
                 this.empresaService.getAll(),
-                this.modeloPropostaService.getAtivos(),
+                this.modeloService.getAtivos('PROPOSTA'),
                 this.servicosService.getAtivos()
             ]);
 
@@ -136,7 +136,7 @@ export class PropostaEmpresaIndexComponent implements OnInit, OnDestroy {
 
             this.modelos = modelos;
             this.modeloOptions = modelos
-                .filter((modelo): modelo is ModeloProposta & { id: string } => !!modelo.id)
+                .filter((modelo): modelo is Modelo & { id: string } => !!modelo.id)
                 .map((modelo, index) => ({
                     label: this.modeloLabel(modelo, index),
                     value: modelo.id
@@ -151,7 +151,7 @@ export class PropostaEmpresaIndexComponent implements OnInit, OnDestroy {
         }
     }
 
-    private modeloLabel(modelo: ModeloProposta, index: number): string {
+    private modeloLabel(modelo: Modelo, index: number): string {
         if (modelo.nome?.trim()) {
             return modelo.nome.trim();
         }
@@ -184,7 +184,7 @@ export class PropostaEmpresaIndexComponent implements OnInit, OnDestroy {
             parametros: { ...proposta.parametros }
         };
         this.validade = proposta.validade ? this.parseDate(proposta.validade) : null;
-        this.applyModeloParametros(proposta.modelo_proposta_id, false);
+        this.applyModeloParametros(proposta.modelo_id, false);
         this.servicoItens = [];
         this.submitted = false;
         this.propostaDialog = true;
@@ -231,7 +231,7 @@ export class PropostaEmpresaIndexComponent implements OnInit, OnDestroy {
 
     /** Ao trocar o modelo, deriva os parâmetros e reseta os valores quando limpar dados. */
     onModeloChange(): void {
-        this.applyModeloParametros(this.proposta.modelo_proposta_id, true);
+        this.applyModeloParametros(this.proposta.modelo_id, true);
     }
 
     private applyModeloParametros(modeloId: string | null, resetValues: boolean): void {
@@ -259,7 +259,7 @@ export class PropostaEmpresaIndexComponent implements OnInit, OnDestroy {
 
     /** Abre a prévia da proposta com os campos-chave preenchidos, em tela cheia. */
     visualizarProposta(): void {
-        const modelo = this.modelos.find((m) => m.id === this.proposta.modelo_proposta_id);
+        const modelo = this.modelos.find((m) => m.id === this.proposta.modelo_id);
 
         if (!modelo) {
             this.messageService.add({ severity: 'warn', summary: 'Atenção', detail: 'Selecione um modelo de proposta para pré-visualizar.', life: 3500 });
@@ -281,7 +281,7 @@ export class PropostaEmpresaIndexComponent implements OnInit, OnDestroy {
      * (empresa, modelo/parâmetros, validade, serviços) e abre a prévia em tela cheia.
      */
     async visualizarPropostaDaGrid(proposta: PropostaEmpresa): Promise<void> {
-        const modelo = this.modelos.find((m) => m.id === proposta.modelo_proposta_id);
+        const modelo = this.modelos.find((m) => m.id === proposta.modelo_id);
 
         if (!modelo) {
             this.messageService.add({ severity: 'warn', summary: 'Atenção', detail: 'Esta proposta não possui um modelo ativo vinculado para pré-visualizar.', life: 4000 });
@@ -342,7 +342,11 @@ export class PropostaEmpresaIndexComponent implements OnInit, OnDestroy {
 
     /** Substitui as ocorrências de ${chave} no conteúdo pelos valores informados. */
     private aplicarTokens(content: string, tokens: Record<string, string>): string {
-        return content.replace(/\$\{\s*([a-zA-Z0-9_]+)\s*\}/g, (match, chave: string) => {
+        // 1) resolve blocos condicionais antes das substituições simples
+        let resultado = this.aplicarBlocosCondicionais(content, tokens);
+
+        // 2) substitui os tokens simples ${chave}
+        return resultado.replace(/\$\{\s*([a-zA-Z0-9_]+)\s*\}/g, (match, chave: string) => {
             const valor = tokens[chave];
             // mantém o token original quando não há valor definido, para evidenciar o que falta
             if (valor === undefined) {
@@ -350,6 +354,54 @@ export class PropostaEmpresaIndexComponent implements OnInit, OnDestroy {
             }
             return valor.length > 0 ? valor : match;
         });
+    }
+
+    /**
+     * Resolve blocos condicionais (seções "liga/desliga"):
+     *   ${#chave}...${/chave}  → mantém o conteúdo se a chave for "verdadeira"
+     *   ${^chave}...${/chave}  → mantém o conteúdo se a chave for "falsa"/vazia
+     * "Verdadeiro" = valor presente, não vazio e diferente de false/nao/não/0/off.
+     */
+    private aplicarBlocosCondicionais(content: string, tokens: Record<string, string>): string {
+        const bloco = /\$\{([#^])\s*([a-zA-Z0-9_]+)\s*\}([\s\S]*?)\$\{\/\s*\2\s*\}/g;
+
+        let anterior: string;
+        let atual = content;
+        // reprocessa até estabilizar (suporta blocos aninhados)
+        do {
+            anterior = atual;
+            atual = atual.replace(bloco, (_match, tipo: string, chave: string, interno: string) => {
+                const ativo = this.tokenVerdadeiro(tokens[chave]);
+                const incluir = tipo === '#' ? ativo : !ativo;
+                return incluir ? interno : '';
+            });
+        } while (atual !== anterior);
+
+        return atual;
+    }
+
+    /** Estado de um parâmetro booleano (bloco liga/desliga) no formulário. */
+    isBlocoAtivo(chave: string): boolean {
+        return this.tokenVerdadeiro(this.proposta.parametros?.[chave]);
+    }
+
+    setBlocoAtivo(chave: string, ativo: boolean): void {
+        if (!this.proposta.parametros) {
+            this.proposta.parametros = {};
+        }
+        this.proposta.parametros[chave] = ativo ? 'true' : 'false';
+    }
+
+    /** Avalia se um valor de token deve ser considerado "verdadeiro" para blocos condicionais. */
+    private tokenVerdadeiro(valor: string | number | null | undefined): boolean {
+        if (valor === undefined || valor === null) {
+            return false;
+        }
+        const v = String(valor).trim().toLowerCase();
+        if (v === '') {
+            return false;
+        }
+        return !['false', 'nao', 'não', '0', 'off', 'no'].includes(v);
     }
 
     private montarListaServicos(): string {
@@ -454,7 +506,7 @@ export class PropostaEmpresaIndexComponent implements OnInit, OnDestroy {
 
         const payload = {
             empresa_id: this.proposta.empresa_id,
-            modelo_proposta_id: this.proposta.modelo_proposta_id || null,
+            modelo_id: this.proposta.modelo_id || null,
             status: this.proposta.status,
             validade: this.validade ? this.formatDate(this.validade) : null,
             vigencia: this.proposta.vigencia ?? null,

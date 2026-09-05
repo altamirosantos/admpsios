@@ -154,7 +154,7 @@
     font-size:24px;
     color:var(--cream-text);
     opacity:0.9;
-    max-width:23ch;
+    max-width:22ch;
     margin-bottom:56px;
   }
   .cover .client-label{
@@ -468,64 +468,13 @@
     color:var(--lilac);
     font-size:15px;
   }
-  /* Bloco de assinatura com foto */
-  .signature-block{
-    margin-top:44px;
-    display:flex;
-    align-items:center;
-    gap:18px;
-  }
-  .signature-block .photo{
-    width:76px;
-    height:76px;
-    border-radius:50%;
-    object-fit:cover;
-    flex-shrink:0;
-    border:2px solid var(--gold);
-    box-shadow:0 0 0 4px rgba(167,139,196,0.18);
-  }
-  .signature-block .who .name{
-    font-family:'Fraunces', serif;
-    font-size:18px;
-    font-weight:600;
-    color:var(--cream-text);
-    line-height:1.2;
-  }
-  .signature-block .who .role{
-    font-size:12px;
-    letter-spacing:0.16em;
-    text-transform:uppercase;
-    color:var(--gold);
-    margin-top:3px;
-  }
-  .signature-quote{
-    margin-top:28px;
-    font-family:'Fraunces', serif;
-    font-style:italic;
-    color:var(--lilac);
-    font-size:15px;
-    max-width:52ch;
-    line-height:1.5;
-  }
 
   /* ---------- IMPRESSÃO / EXPORTAÇÃO EM PDF ---------- */
   @media print{
-    @page{ size:A4; margin:0; }
-    html, body{
-      background:#fff;
-      padding:0;
-      margin:0;
-      -webkit-print-color-adjust:exact;
-      print-color-adjust:exact;
-    }
-    /* garante que fundos e cores (páginas escuras, bloco de preço) saiam no PDF */
-    *{
-      -webkit-print-color-adjust:exact;
-      print-color-adjust:exact;
-    }
+    body{background:#fff; padding:0;}
     .page{
-      width:210mm;
-      min-height:297mm;
+      width:auto;
+      min-height:100vh;
       margin:0;
       box-shadow:none;
       page-break-after:always;
@@ -548,8 +497,8 @@
     <div class="subtitle">Apresentação de proposta que promove saúde mental — NR-1.</div>
     <div class="client-label">Preparada para</div>
     <div class="client">${empresa}</div>
-    <div class="cover-date">${data_proposta}</div>
-    <div class="page-frame"><span class="tag">NR-1 · Proposta</span><span class="num">01 / 07</span></div>
+    <div class="cover-date">${data_criacao}</div>
+    <div class="page-frame"><span class="tag">NR-1 · Proposta</span><span class="num">01 / 08</span></div>
   </section>
 
   <!-- PÁGINA 2 — QUEM SOMOS + DIFERENCIAIS -->
@@ -586,9 +535,58 @@ direcionada à prevenção, promoção da saúde mental e construção de ambien
 mais saudáveis, seguros e sustentáveis.</li>
       </ul>
     </div>
-    <div class="page-frame"><span class="tag">Quem somos</span><span class="num">02 / 07</span></div>
+    <div class="page-frame"><span class="tag">Quem somos</span><span class="num">02 / 08</span></div>
   </section>
 
+  <!-- PÁGINA 3 — OUTROS SERVIÇOS -->
+  <section class="page light services">
+    <div class="seal">
+      <div class="role">Psicóloga</div>
+      <div class="name">Ana Reclé</div>
+    </div>
+    <div class="page-kicker">Portfólio</div>
+    <h2 class="page-title">Conheça outros serviços especializados</h2>
+    <div class="divider"></div>
+    <div class="service-grid">
+      <div class="service-cell">
+        <span class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg></span>
+        <span class="label"><b>NR-1</b>Diagnóstico de Riscos Psicossociais</span>
+      </div>
+      <div class="service-cell">
+        <span class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2 3 7v6c0 5 3.8 8 9 9 5.2-1 9-4 9-9V7z"/></svg></span>
+        <span class="label"><b>NR 33/35</b></span>
+      </div>
+      <div class="service-cell">
+        <span class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0z"/><path d="M12 8v4l3 2"/></svg></span>
+        <span class="label">Programas contínuos de promoção de saúde mental</span>
+      </div>
+      <div class="service-cell">
+        <span class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 3v5h5"/><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M8 13h8M8 17h6"/></svg></span>
+        <span class="label">Evidências e documentos atendendo NRs</span>
+      </div>
+      <div class="service-cell">
+        <span class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg></span>
+        <span class="label">Combate ao assédio sexual e psicológico</span>
+      </div>
+      <div class="service-cell">
+        <span class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 5h16v10H8l-4 4z"/></svg></span>
+        <span class="label">Palestras, Plantões, Programas.</span>
+      </div>
+      <div class="service-cell">
+        <span class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg></span>
+        <span class="label">Classificação de Riscos Psicossociais</span>
+      </div>
+      <div class="service-cell">
+        <span class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-2.72.67 1.65 1.65 0 0 0-1 1.51V22a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 8 20.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 3.6 15a1.65 1.65 0 0 0-1.51-1H2a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 3.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 3.6h.09"/></svg></span>
+        <span class="label">Gerenciamento de Riscos Psicossociais</span>
+      </div>
+      <div class="service-cell">
+        <span class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg></span>
+        <span class="label">Reuniões, Quadros, Eventos, Boletins, Campanhas</span>
+      </div>
+    </div>
+    <div class="page-frame"><span class="tag">Outros serviços</span><span class="num">03 / 08</span></div>
+  </section>
 
   <!-- PÁGINA 4 — NR-1 É COISA SÉRIA -->
   <section class="page light">
@@ -620,7 +618,7 @@ mais saudáveis, seguros e sustentáveis.</li>
     </ul>
     <div class="mission-band">Nossa missão é agilizar a regularização da sua empresa</div>
     <div class="callout">Saúde mental não tem preço, mas a falta dela terá fiscalização: saia na frente e se adeque.</div>
-    <div class="page-frame"><span class="tag">NR-1</span><span class="num">03 / 07</span></div>
+    <div class="page-frame"><span class="tag">NR-1</span><span class="num">04 / 08</span></div>
   </section>
 
   <!-- PÁGINA 5 — PASSO A PASSO (DARK) -->
@@ -630,7 +628,7 @@ mais saudáveis, seguros e sustentáveis.</li>
       <div class="name">Ana Reclé</div>
     </div>
     <div class="page-kicker">Metodologia</div>
-    <h2 class="page-title" style="color:var(--cream-text);">O diagnóstico é o primeiro passo para promover a saúde mental e fortalecer a organização.</h2>
+    <h2 class="page-title" style="color:var(--cream-text);">Diagnóstico de Riscos Psicossociais</h2>
     <div class="kick">o começo:</div>
 
     <div class="step">
@@ -645,7 +643,15 @@ mais saudáveis, seguros e sustentáveis.</li>
       <div class="step-index">3º passo</div>
       <p>Entrega de relatório técnico com classificações de riscos psicossociais e apresentação da proposta de intervenção contínua do programa de saúde mental.</p>
     </div>
-    <div class="page-frame"><span class="tag">Passo a passo</span><span class="num">04 / 07</span></div>
+    <div class="step">
+      <div class="step-index">4º passo</div>
+      <p>Após aprovação da proposta: definição de calendário anual de prevenção de riscos psicossociais.</p>
+    </div>
+    <div class="step">
+      <div class="step-index">5º passo · Objetivo 3</div>
+      <p>Entrega anual de 12 programas de promoção, prevenção e melhoria contínua de saúde mental.</p>
+    </div>
+    <div class="page-frame"><span class="tag">Passo a passo</span><span class="num">05 / 08</span></div>
   </section>
 
   <!-- PÁGINA 6 — PROJEÇÃO DE ECONOMIA / BENEFÍCIOS -->
@@ -669,10 +675,10 @@ mais saudáveis, seguros e sustentáveis.</li>
       <li>Evitar multas, estando regulares</li>
     </ul>
     <p class="invest-note">
-      Além de criar uma cultura de saúde mental, com 8 anos de experiência em escuta e atuação clínica na Psicologia,
+      Além de criar uma cultura de saúde mental, ter meus 16 anos de carreira na Psicologia,
       como o contato de saúde mental da sua empresa, trará melhorias contínuas.
     </p>
-    <div class="page-frame"><span class="tag">Projeção de economia</span><span class="num">05 / 07</span></div>
+    <div class="page-frame"><span class="tag">Projeção de economia</span><span class="num">06 / 08</span></div>
   </section>
 
   <!-- PÁGINA 7 — INVESTIMENTO -->
@@ -691,11 +697,18 @@ mais saudáveis, seguros e sustentáveis.</li>
 
     <div class="price-block">
       <div class="price-figures">
-        <div class="figure">${valor_forma_pagamento}</div>
+        <div class="figure">12 x R$ 1.250,00<span class="or">ou</span>R$ 15.000,00 à vista</div>
       </div>
-      <div class="price-scope">Para ${total_colaboradores} colaboradores em ${qtde_setor} setores.</div>
+      <div class="price-scope">Para 250 colaboradores em 13 setores.</div>
     </div>
-    <div class="page-frame"><span class="tag">Investimento</span><span class="num">06 / 07</span></div>
+
+    <div class="invest-question">Vamos nos adequar juntos?</div>
+
+    <p class="courtesy">
+      <strong>Como cortesia:</strong> será oferecido a ação Setembro Amarelo online e/ou presencial
+      para toda empresa.
+    </p>
+    <div class="page-frame"><span class="tag">Investimento</span><span class="num">07 / 08</span></div>
   </section>
 
   <!-- PÁGINA 8 — FECHAMENTO (DARK) -->
@@ -705,39 +718,28 @@ mais saudáveis, seguros e sustentáveis.</li>
       <div class="name">Ana Reclé</div>
     </div>
     <div class="page-kicker" style="color:var(--lilac);">Contato</div>
-    <h2 class="page-title" style="color:var(--cream-text);">Quanto VALE proteger a sua empresa e quem faz parte dela?</h2>
+    <h2 class="page-title" style="color:var(--cream-text);">Quanto VALE uma assessoria psicossocial para proteger sua empresa e colaboradores?</h2>
     <div class="divider"></div>
     <p class="closing-lead">
-      Uma assessoria psicossocial ajuda sua empresa a identificar riscos, prevenir problemas e
-promover um ambiente de trabalho mais saudável e seguro.
-    </p>
-    <p class="closing-lead">
-        Entre em contato e dê o primeiro passo para cuidar de pessoas e fortalecer o futuro da sua
-empresa.
+      Se você está na dúvida sobre os BENEFÍCIOS de ter o seu negócio protegido através da
+      nossa assessoria especializada, marque uma call conosco! Será um prazer ajudar!
     </p>
     <div class="contact-row">
       <!--div class="contact-item">
         <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg>
-        Instagram <span class="ph">— @anarecle_psicologa</span>
+        Instagram <span class="ph">— xx</span>
       </div-->
       <div class="contact-item">
         <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 11.5a8.5 8.5 0 1 1-3.7-7L21 3l-1.1 4.1a8.46 8.46 0 0 1 1.1 4.4Z"/></svg>
-        WhatsApp <span class="ph">— 71 99911 6945</span>
+        WhatsApp <span class="ph">— xx</span>
       </div>
       <div class="contact-item">
         <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 6 8 7 8-7"/></svg>
-        E-mail <span class="ph">— anareclefreitas@gmail.com</span>
+        E-mail <span class="ph">— xx</span>
       </div>
     </div>
-    <p class="signature-quote">"Cuidar de pessoas é cuidar do futuro da sua empresa. Vamos transformar cuidado em prevenção e desenvolvimento."</p>
-    <div class="signature-block">
-      <img class="photo" alt="Psicóloga Ana Reclé" src="data:image/jpeg;base64,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">
-      <div class="who">
-        <div class="name">Ana Reclé</div>
-        <div class="role">Psicóloga</div>
-      </div>
-    </div>
-    <div class="page-frame" style="color:var(--lilac);"><span class="tag">Proposta · NR-1 · ${empresa}</span><span class="num">07 / 07</span></div>
+    <div class="signature">Psicóloga Ana Reclé</div>
+    <div class="page-frame" style="color:var(--lilac);"><span class="tag">Proposta · NR-1 · ${empresa}</span><span class="num">08 / 08</span></div>
   </section>
 
 </body>

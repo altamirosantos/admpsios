@@ -1,17 +1,19 @@
 import { Injectable } from '@angular/core';
 import { SupabaseService } from './supabase.service';
 
-export type ModeloPropostaStatus = 'ATIVO' | 'INATIVO';
+export type ModeloStatus = 'ATIVO' | 'INATIVO';
 
-export const MODELO_PROPOSTA_STATUS: ModeloPropostaStatus[] = [
-    'ATIVO',
-    'INATIVO'
-];
+export const MODELO_STATUS: ModeloStatus[] = ['ATIVO', 'INATIVO'];
 
-export type ParametroTipo = 'texto' | 'numero' | 'data' | 'moeda';
+/** Tipo do modelo: documento de PROPOSTA ou de CONTRATO. */
+export type ModeloTipo = 'PROPOSTA' | 'CONTRATO';
+
+export const MODELO_TIPO: ModeloTipo[] = ['PROPOSTA', 'CONTRATO'];
+
+export type ParametroTipo = 'texto' | 'numero' | 'data' | 'moeda' | 'booleano';
 
 /**
- * Definição de um parâmetro-chave do conteúdo da proposta.
+ * Definição de um parâmetro-chave do conteúdo do modelo.
  * A `chave` é o identificador usado no content no formato ${chave}.
  */
 export interface ParametroSchema {
@@ -20,34 +22,43 @@ export interface ParametroSchema {
     tipo: ParametroTipo;
 }
 
-export interface ModeloProposta {
+export interface Modelo {
     id?: string;
     nome: string | null;
-    status: ModeloPropostaStatus;
+    status: ModeloStatus;
+    tipo: ModeloTipo;
     content: string | null;
     parametros_schema: ParametroSchema[];
     created_at?: string | null;
     updated_at?: string | null;
 }
 
-export type ModeloPropostaPayload = Omit<ModeloProposta, 'id' | 'created_at' | 'updated_at'>;
+export type ModeloPayload = Omit<Modelo, 'id' | 'created_at' | 'updated_at'>;
 
-type ModeloPropostaRow = Omit<ModeloProposta, 'parametros_schema'> & {
+type ModeloRow = Omit<Modelo, 'parametros_schema'> & {
     parametros_schema: unknown;
 };
 
 @Injectable({
     providedIn: 'root'
 })
-export class ModeloPropostaService {
-    private readonly table = 'modelo_proposta';
+export class ModeloService {
+    private readonly table = 'modelo';
+    private readonly columns = 'id, nome, status, tipo, content, parametros_schema, created_at, updated_at';
 
     constructor(private readonly supabaseService: SupabaseService) {}
 
-    async getAll(): Promise<ModeloProposta[]> {
-        const { data, error } = await this.supabaseService.client
+    /** Lista todos os modelos; opcionalmente filtrando por tipo (PROPOSTA/CONTRATO). */
+    async getAll(tipo?: ModeloTipo): Promise<Modelo[]> {
+        let query = this.supabaseService.client
             .from(this.table)
-            .select('id, nome, status, content, parametros_schema, created_at, updated_at')
+            .select(this.columns);
+
+        if (tipo) {
+            query = query.eq('tipo', tipo);
+        }
+
+        const { data, error } = await query
             .order('updated_at', { ascending: false, nullsFirst: false })
             .order('created_at', { ascending: false, nullsFirst: false });
 
@@ -55,10 +66,10 @@ export class ModeloPropostaService {
             throw error;
         }
 
-        return (data || []).map((item) => this.mapModelo(item as ModeloPropostaRow));
+        return (data || []).map((item) => this.mapModelo(item as ModeloRow));
     }
 
-    async create(payload: ModeloPropostaPayload): Promise<ModeloProposta> {
+    async create(payload: ModeloPayload): Promise<Modelo> {
         const now = new Date().toISOString();
 
         const { data, error } = await this.supabaseService.client
@@ -69,17 +80,17 @@ export class ModeloPropostaService {
                 created_at: now,
                 updated_at: now
             })
-            .select('id, nome, status, content, parametros_schema, created_at, updated_at')
+            .select(this.columns)
             .single();
 
         if (error) {
             throw error;
         }
 
-        return this.mapModelo(data as ModeloPropostaRow);
+        return this.mapModelo(data as ModeloRow);
     }
 
-    async update(id: string, payload: ModeloPropostaPayload): Promise<ModeloProposta> {
+    async update(id: string, payload: ModeloPayload): Promise<Modelo> {
         const { data, error } = await this.supabaseService.client
             .from(this.table)
             .update({
@@ -88,14 +99,14 @@ export class ModeloPropostaService {
                 updated_at: new Date().toISOString()
             })
             .eq('id', id)
-            .select('id, nome, status, content, parametros_schema, created_at, updated_at')
+            .select(this.columns)
             .single();
 
         if (error) {
             throw error;
         }
 
-        return this.mapModelo(data as ModeloPropostaRow);
+        return this.mapModelo(data as ModeloRow);
     }
 
     async delete(id: string): Promise<void> {
@@ -109,26 +120,32 @@ export class ModeloPropostaService {
         }
     }
 
-    /** Retorna apenas os modelos com status ATIVO (para seleção em propostas). */
-    async getAtivos(): Promise<ModeloProposta[]> {
-        const { data, error } = await this.supabaseService.client
+    /** Retorna apenas os modelos ATIVO, opcionalmente de um tipo (para seleção). */
+    async getAtivos(tipo?: ModeloTipo): Promise<Modelo[]> {
+        let query = this.supabaseService.client
             .from(this.table)
-            .select('id, nome, status, content, parametros_schema, created_at, updated_at')
-            .eq('status', 'ATIVO')
-            .order('updated_at', { ascending: false, nullsFirst: false });
+            .select(this.columns)
+            .eq('status', 'ATIVO');
+
+        if (tipo) {
+            query = query.eq('tipo', tipo);
+        }
+
+        const { data, error } = await query.order('updated_at', { ascending: false, nullsFirst: false });
 
         if (error) {
             throw error;
         }
 
-        return (data || []).map((item) => this.mapModelo(item as ModeloPropostaRow));
+        return (data || []).map((item) => this.mapModelo(item as ModeloRow));
     }
 
     /** Normaliza a coluna JSON `parametros_schema` para um array tipado, tolerando dados legados. */
-    private mapModelo(item: ModeloPropostaRow): ModeloProposta {
+    private mapModelo(item: ModeloRow): Modelo {
         return {
             ...item,
-            status: (item.status as ModeloPropostaStatus) || 'ATIVO',
+            status: (item.status as ModeloStatus) || 'ATIVO',
+            tipo: (item.tipo as ModeloTipo) || 'PROPOSTA',
             parametros_schema: this.parseParametros(item.parametros_schema)
         };
     }

@@ -1,60 +1,60 @@
 import { Injectable } from '@angular/core';
 import { SupabaseService } from './supabase.service';
 
-export type PropostaStatus = 'RASCUNHO' | 'ENVIADA' | 'APROVADA' | 'REJEITADA' | 'CANCELADA';
+export type ContratoStatus = 'RASCUNHO' | 'ENVIADO' | 'ASSINADO' | 'CANCELADO' | 'ENCERRADO';
 
-export const PROPOSTA_STATUS: PropostaStatus[] = [
+export const CONTRATO_STATUS: ContratoStatus[] = [
     'RASCUNHO',
-    'ENVIADA',
-    'APROVADA',
-    'REJEITADA',
-    'CANCELADA'
+    'ENVIADO',
+    'ASSINADO',
+    'CANCELADO',
+    'ENCERRADO'
 ];
 
-export interface PropostaEmpresaSummary {
+export interface ContratoEmpresaSummary {
     id: string;
     nome: string;
 }
 
-export interface PropostaModeloSummary {
+export interface ContratoModeloSummary {
     id: string;
     status: string | null;
 }
 
 /** Valores preenchidos para as chaves definidas no parametros_schema do modelo. */
-export type PropostaParametros = Record<string, string | number | null>;
+export type ContratoParametros = Record<string, string | number | null>;
 
-export interface PropostaEmpresa {
+export interface ContratoEmpresa {
     id?: string;
     empresa_id: string;
     modelo_id: string | null;
-    status: PropostaStatus;
+    status: ContratoStatus;
     validade: string | null;
     vigencia: number | null;
-    parametros: PropostaParametros;
+    parametros: ContratoParametros;
     valor: number | null;
-    empresa?: PropostaEmpresaSummary | null;
-    modelo?: PropostaModeloSummary | null;
+    empresa?: ContratoEmpresaSummary | null;
+    modelo?: ContratoModeloSummary | null;
     created_at?: string | null;
     updated_at?: string | null;
 }
 
-type PropostaEmpresaRow = Omit<PropostaEmpresa, 'empresa' | 'modelo' | 'parametros'> & {
-    empresa?: PropostaEmpresaSummary[] | PropostaEmpresaSummary | null;
-    modelo?: PropostaModeloSummary[] | PropostaModeloSummary | null;
+type ContratoEmpresaRow = Omit<ContratoEmpresa, 'empresa' | 'modelo' | 'parametros'> & {
+    empresa?: ContratoEmpresaSummary[] | ContratoEmpresaSummary | null;
+    modelo?: ContratoModeloSummary[] | ContratoModeloSummary | null;
     parametros: unknown;
 };
 
-export type PropostaEmpresaPayload = Omit<
-    PropostaEmpresa,
+export type ContratoEmpresaPayload = Omit<
+    ContratoEmpresa,
     'id' | 'empresa' | 'modelo' | 'created_at' | 'updated_at'
 >;
 
 @Injectable({
     providedIn: 'root'
 })
-export class PropostaEmpresaService {
-    private readonly table = 'proposta_empresa';
+export class ContratoEmpresaService {
+    private readonly table = 'contrato_empresa';
 
     private readonly selectColumns = `
         id,
@@ -73,7 +73,7 @@ export class PropostaEmpresaService {
 
     constructor(private readonly supabaseService: SupabaseService) {}
 
-    async getAll(): Promise<PropostaEmpresa[]> {
+    async getAll(): Promise<ContratoEmpresa[]> {
         const { data, error } = await this.supabaseService.client
             .from(this.table)
             .select(this.selectColumns)
@@ -84,10 +84,10 @@ export class PropostaEmpresaService {
             throw error;
         }
 
-        return (data || []).map((item) => this.mapProposta(item as PropostaEmpresaRow));
+        return (data || []).map((item) => this.mapContrato(item as ContratoEmpresaRow));
     }
 
-    async create(payload: PropostaEmpresaPayload): Promise<PropostaEmpresa> {
+    async create(payload: ContratoEmpresaPayload): Promise<ContratoEmpresa> {
         const now = new Date().toISOString();
 
         const { data, error } = await this.supabaseService.client
@@ -104,10 +104,10 @@ export class PropostaEmpresaService {
             throw error;
         }
 
-        return this.mapProposta(data as PropostaEmpresaRow);
+        return this.mapContrato(data as ContratoEmpresaRow);
     }
 
-    async update(id: string, payload: PropostaEmpresaPayload): Promise<PropostaEmpresa> {
+    async update(id: string, payload: ContratoEmpresaPayload): Promise<ContratoEmpresa> {
         const { data, error } = await this.supabaseService.client
             .from(this.table)
             .update({
@@ -122,7 +122,7 @@ export class PropostaEmpresaService {
             throw error;
         }
 
-        return this.mapProposta(data as PropostaEmpresaRow);
+        return this.mapContrato(data as ContratoEmpresaRow);
     }
 
     async delete(id: string): Promise<void> {
@@ -136,22 +136,20 @@ export class PropostaEmpresaService {
         }
     }
 
-    private mapProposta(item: PropostaEmpresaRow): PropostaEmpresa {
+    private mapContrato(item: ContratoEmpresaRow): ContratoEmpresa {
         const empresa = Array.isArray(item.empresa) ? item.empresa[0] || null : item.empresa || null;
-        const modelo = Array.isArray(item.modelo)
-            ? item.modelo[0] || null
-            : item.modelo || null;
+        const modelo = Array.isArray(item.modelo) ? item.modelo[0] || null : item.modelo || null;
 
         return {
             ...item,
-            status: (item.status as PropostaStatus) || 'RASCUNHO',
+            status: (item.status as ContratoStatus) || 'RASCUNHO',
             parametros: this.parseParametros(item.parametros),
             empresa,
             modelo
         };
     }
 
-    private parseParametros(value: unknown): PropostaParametros {
+    private parseParametros(value: unknown): ContratoParametros {
         let raw: unknown = value;
 
         if (typeof raw === 'string') {
@@ -166,6 +164,6 @@ export class PropostaEmpresaService {
             return {};
         }
 
-        return raw as PropostaParametros;
+        return raw as ContratoParametros;
     }
 }

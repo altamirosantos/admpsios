@@ -6,19 +6,19 @@
             <p-toolbar styleClass="mb-4">
                 <ng-template pTemplate="left">
                     <div>
-                        <h5 class="m-0">Propostas</h5>
-                        <small class="text-color-secondary">Cadastro da tabela <strong>proposta_empresa</strong>.</small>
+                        <h5 class="m-0">Contratos</h5>
+                        <small class="text-color-secondary">Cadastro da tabela <strong>contrato_empresa</strong>.</small>
                     </div>
                 </ng-template>
                 <ng-template pTemplate="right">
-                    <button pButton pRipple label="Nova proposta" icon="pi pi-plus" (click)="openNew()"></button>
+                    <button pButton pRipple label="Novo contrato" icon="pi pi-plus" (click)="openNew()"></button>
                 </ng-template>
             </p-toolbar>
 
             <p-table
-                [value]="propostas"
+                [value]="contratos"
                 [loading]="loading"
-                [paginator]="propostas.length > 10"
+                [paginator]="contratos.length > 10"
                 [rows]="10"
                 [globalFilterFields]="['empresa.nome']"
                 responsiveLayout="scroll"
@@ -43,28 +43,28 @@
                         <th scope="col" style="width: 170px">Ações</th>
                     </tr>
                 </ng-template>
-                <ng-template pTemplate="body" let-proposta>
+                <ng-template pTemplate="body" let-contrato>
                     <tr>
-                        <td class="font-bold">{{ proposta.empresa?.nome || '—' }}</td>
+                        <td class="font-bold">{{ contrato.empresa?.nome || '—' }}</td>
                         <td>
-                            <p-tag [value]="statusLabel(proposta.status)" [severity]="statusSeverity(proposta.status)"></p-tag>
+                            <p-tag [value]="statusLabel(contrato.status)" [severity]="statusSeverity(contrato.status)"></p-tag>
                         </td>
-                        <td>{{ proposta.valor != null ? (proposta.valor | currency: 'BRL':'symbol':'1.2-2':'pt-BR') : '—' }}</td>
-                        <td>{{ proposta.validade ? (proposta.validade | date: 'dd/MM/yyyy') : '—' }}</td>
-                        <td>{{ proposta.updated_at ? (proposta.updated_at | date: 'dd/MM/yyyy HH:mm') : '—' }}</td>
+                        <td>{{ contrato.valor != null ? (contrato.valor | currency: 'BRL':'symbol':'1.2-2':'pt-BR') : '—' }}</td>
+                        <td>{{ contrato.validade ? (contrato.validade | date: 'dd/MM/yyyy') : '—' }}</td>
+                        <td>{{ contrato.updated_at ? (contrato.updated_at | date: 'dd/MM/yyyy HH:mm') : '—' }}</td>
                         <td>
                             <button pButton pRipple icon="pi pi-eye" class="p-button-rounded p-button-help mr-2"
-                                (click)="visualizarPropostaDaGrid(proposta)" pTooltip="Visualizar"></button>
+                                (click)="visualizarContratoDaGrid(contrato)" pTooltip="Visualizar"></button>
                             <button pButton pRipple icon="pi pi-pencil" class="p-button-rounded p-button-success mr-2"
-                                (click)="editProposta(proposta)" pTooltip="Editar"></button>
+                                (click)="editContrato(contrato)" pTooltip="Editar"></button>
                             <button pButton pRipple icon="pi pi-trash" class="p-button-rounded p-button-danger"
-                                (click)="confirmDeleteProposta(proposta)" pTooltip="Excluir"></button>
+                                (click)="confirmDeleteContrato(contrato)" pTooltip="Excluir"></button>
                         </td>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="emptymessage">
                     <tr>
-                        <td colspan="6">Nenhuma proposta cadastrada.</td>
+                        <td colspan="6">Nenhum contrato cadastrado.</td>
                     </tr>
                 </ng-template>
             </p-table>
@@ -72,28 +72,28 @@
     </div>
 </div>
 
-<p-dialog [(visible)]="propostaDialog" [style]="{ width: '720px' }" [modal]="true"
-    [header]="proposta.id ? 'Editar proposta' : 'Nova proposta'" class="p-fluid">
+<p-dialog [(visible)]="contratoDialog" [style]="{ width: '720px' }" [modal]="true"
+    [header]="contrato.id ? 'Editar contrato' : 'Novo contrato'" class="p-fluid">
     <ng-template pTemplate="content">
         <div class="formgrid grid">
             <div class="field col-12 md:col-6">
                 <label for="empresa">Empresa <span class="text-red-500">*</span></label>
-                <p-dropdown inputId="empresa" [options]="empresaOptions" [(ngModel)]="proposta.empresa_id"
+                <p-dropdown inputId="empresa" [options]="empresaOptions" [(ngModel)]="contrato.empresa_id"
                     optionLabel="label" optionValue="value" [filter]="true" filterBy="label"
                     placeholder="Selecione a empresa" appendTo="body"
-                    [ngClass]="{ 'ng-invalid ng-dirty': submitted && !proposta.empresa_id }"></p-dropdown>
-                <small class="p-error" *ngIf="submitted && !proposta.empresa_id">A empresa é obrigatória.</small>
+                    [ngClass]="{ 'ng-invalid ng-dirty': submitted && !contrato.empresa_id }"></p-dropdown>
+                <small class="p-error" *ngIf="submitted && !contrato.empresa_id">A empresa é obrigatória.</small>
             </div>
             <div class="field col-12 md:col-6">
                 <label for="status">Status</label>
-                <p-dropdown inputId="status" [options]="statusOptions" [(ngModel)]="proposta.status"
+                <p-dropdown inputId="status" [options]="statusOptions" [(ngModel)]="contrato.status"
                     optionLabel="label" optionValue="value" appendTo="body"></p-dropdown>
             </div>
         </div>
 
         <div class="field">
-            <label for="modelo">Modelo de proposta</label>
-            <p-dropdown inputId="modelo" [options]="modeloOptions" [(ngModel)]="proposta.modelo_id"
+            <label for="modelo">Modelo de contrato</label>
+            <p-dropdown inputId="modelo" [options]="modeloOptions" [(ngModel)]="contrato.modelo_id"
                 optionLabel="label" optionValue="value" [filter]="true" filterBy="label" [showClear]="true"
                 placeholder="Selecione um modelo (opcional)" appendTo="body"
                 (onChange)="onModeloChange()"></p-dropdown>
@@ -102,12 +102,12 @@
         <div class="formgrid grid">
             <div class="field col-12 md:col-4">
                 <label for="valor">Valor</label>
-                <p-inputNumber inputId="valor" [(ngModel)]="proposta.valor" mode="currency" currency="BRL"
+                <p-inputNumber inputId="valor" [(ngModel)]="contrato.valor" mode="currency" currency="BRL"
                     locale="pt-BR" [min]="0"></p-inputNumber>
             </div>
             <div class="field col-12 md:col-4">
                 <label for="vigencia">Vigência (dias)</label>
-                <p-inputNumber inputId="vigencia" [(ngModel)]="proposta.vigencia" [min]="0" [useGrouping]="false"></p-inputNumber>
+                <p-inputNumber inputId="vigencia" [(ngModel)]="contrato.vigencia" [min]="0" [useGrouping]="false"></p-inputNumber>
             </div>
             <div class="field col-12 md:col-4">
                 <label for="validade">Validade</label>
@@ -130,11 +130,11 @@
                         <span class="chave-hint">{{ chaveToken(def.chave) }}</span>
                     </label>
                     <input *ngIf="def.tipo === 'texto'" [id]="'param-' + def.chave" type="text" pInputText
-                        [(ngModel)]="proposta.parametros[def.chave]" />
+                        [(ngModel)]="contrato.parametros[def.chave]" />
                     <input *ngIf="def.tipo === 'numero' || def.tipo === 'moeda'" [id]="'param-' + def.chave"
-                        type="number" pInputText [(ngModel)]="proposta.parametros[def.chave]" />
+                        type="number" pInputText [(ngModel)]="contrato.parametros[def.chave]" />
                     <input *ngIf="def.tipo === 'data'" [id]="'param-' + def.chave" type="date" pInputText
-                        [(ngModel)]="proposta.parametros[def.chave]" />
+                        [(ngModel)]="contrato.parametros[def.chave]" />
                     <div *ngIf="def.tipo === 'booleano'" class="flex align-items-center gap-2 pt-2">
                         <p-inputSwitch [inputId]="'param-' + def.chave"
                             [ngModel]="isBlocoAtivo(def.chave)"
@@ -144,68 +144,24 @@
                 </div>
             </div>
         </div>
-
-        <!-- Serviços da proposta (1..n) -->
-        <div class="servicos-box mt-3">
-            <div class="flex align-items-center justify-content-between mb-2">
-                <div class="flex align-items-center gap-2">
-                    <i class="pi pi-briefcase text-primary"></i>
-                    <span class="font-semibold">Serviços da proposta</span>
-                </div>
-                <button pButton pRipple type="button" label="Adicionar serviço" icon="pi pi-plus"
-                    class="p-button-outlined p-button-sm" (click)="addServicoItem()"
-                    [disabled]="servicoOptions.length === 0"></button>
-            </div>
-
-            <small class="text-color-secondary block mb-3" *ngIf="servicoOptions.length === 0">
-                Nenhum serviço ativo cadastrado. Cadastre serviços em "Serviços de Proposta".
-            </small>
-
-            <div *ngFor="let item of servicoItens; let i = index" class="servico-row">
-                <div class="grid formgrid align-items-start">
-                    <div class="col-12 md:col-8 field mb-2">
-                        <p-dropdown [options]="servicoOptions" [(ngModel)]="item.servico_proposta_id"
-                            optionLabel="label" optionValue="value" [filter]="true" filterBy="label"
-                            placeholder="Selecione o serviço" appendTo="body"
-                            [ngClass]="{ 'ng-invalid ng-dirty': submitted && !item.servico_proposta_id }"></p-dropdown>
-                    </div>
-                    <div class="col-8 md:col-3 field mb-2">
-                        <p-inputNumber [(ngModel)]="item.qtde" [min]="1" [showButtons]="true"
-                            buttonLayout="horizontal" spinnerMode="horizontal" decrementButtonClass="p-button-secondary"
-                            incrementButtonClass="p-button-secondary" incrementButtonIcon="pi pi-plus"
-                            decrementButtonIcon="pi pi-minus" [useGrouping]="false"></p-inputNumber>
-                    </div>
-                    <div class="col-4 md:col-1 field mb-2">
-                        <button pButton pRipple type="button" icon="pi pi-times"
-                            class="p-button-rounded p-button-text p-button-danger" pTooltip="Remover"
-                            (click)="removeServicoItem(i)"></button>
-                    </div>
-                </div>
-            </div>
-
-            <small class="p-error block" *ngIf="submitted && hasDuplicateServicos()">Há serviços repetidos.</small>
-            <small class="text-color-secondary block" *ngIf="servicoItens.length === 0 && servicoOptions.length > 0">
-                Nenhum serviço adicionado. Use "Adicionar serviço" para incluir de 1 a N serviços.
-            </small>
-        </div>
     </ng-template>
 
     <ng-template pTemplate="footer">
         <button pButton pRipple label="Visualizar" icon="pi pi-eye" class="p-button-outlined mr-auto"
-            [disabled]="!proposta.modelo_id" (click)="visualizarProposta()"
-            pTooltip="Pré-visualiza a proposta com os campos-chave preenchidos"></button>
+            [disabled]="!contrato.modelo_id" (click)="visualizarContrato()"
+            pTooltip="Pré-visualiza o contrato com os campos-chave preenchidos"></button>
         <button pButton pRipple label="Cancelar" icon="pi pi-times" class="p-button-text" (click)="hideDialog()"></button>
-        <button pButton pRipple label="Salvar" icon="pi pi-check" class="p-button-text" (click)="saveProposta()"></button>
+        <button pButton pRipple label="Salvar" icon="pi pi-check" class="p-button-text" (click)="saveContrato()"></button>
     </ng-template>
 </p-dialog>
 
-<!-- Prévia da proposta em tela cheia -->
+<!-- Prévia do contrato em tela cheia -->
 <p-dialog [(visible)]="previewDialog" [modal]="true" [maximizable]="false" [draggable]="false" [resizable]="false"
-    header="Pré-visualização da proposta" styleClass="preview-dialog" [style]="{ width: '100vw', height: '100vh' }"
+    header="Pré-visualização do contrato" styleClass="preview-dialog" [style]="{ width: '100vw', height: '100vh' }"
     [contentStyle]="{ padding: '0', overflow: 'hidden' }" (onHide)="fecharPreview()">
     <div class="preview-frame-wrap">
         <iframe #previewIframe *ngIf="previewUrl" [src]="previewUrl" class="preview-frame"
-            title="Pré-visualização da proposta"
+            title="Pré-visualização do contrato"
             sandbox="allow-same-origin allow-popups allow-modals"></iframe>
     </div>
     <ng-template pTemplate="footer">
@@ -215,13 +171,13 @@
     </ng-template>
 </p-dialog>
 
-<p-dialog [(visible)]="deletePropostaDialog" header="Confirmação" [modal]="true" [style]="{ width: '450px' }">
+<p-dialog [(visible)]="deleteContratoDialog" header="Confirmação" [modal]="true" [style]="{ width: '450px' }">
     <div class="flex align-items-center justify-content-center">
         <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem"></i>
-        <span *ngIf="proposta">Confirma exclusão da proposta de <b>{{ proposta.empresa?.nome }}</b>?</span>
+        <span *ngIf="contrato">Confirma exclusão do contrato de <b>{{ contrato.empresa?.nome }}</b>?</span>
     </div>
     <ng-template pTemplate="footer">
-        <button pButton pRipple icon="pi pi-times" class="p-button-text" label="Não" (click)="deletePropostaDialog = false"></button>
-        <button pButton pRipple icon="pi pi-check" class="p-button-text" label="Sim" (click)="deleteProposta()"></button>
+        <button pButton pRipple icon="pi pi-times" class="p-button-text" label="Não" (click)="deleteContratoDialog = false"></button>
+        <button pButton pRipple icon="pi pi-check" class="p-button-text" label="Sim" (click)="deleteContrato()"></button>
     </ng-template>
 </p-dialog>

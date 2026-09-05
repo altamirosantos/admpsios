@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contrato de Prestação de Serviços — NR-1 · ${empresa}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!--
+  ================================================================================
+  CONTRATO DE PRESTAÇÃO DE SERVIÇOS — NR-1 / Saúde Mental
+  Documento parametrizável (mesma dinâmica dos modelos de proposta).
+
+  TOKENS DE PREENCHIMENTO  →  ${token}
+    Substituídos pelo valor informado no cadastro (tipo texto/número/moeda/data).
+
+  BLOCOS CONDICIONAIS (liga/desliga)  →  ${#chave}...${/chave}
+    Trechos que podem OU NÃO fazer parte do documento (originalmente em amarelo
+    no .docx). O bloco só aparece quando a "chave" for verdadeira. Uma chave é
+    verdadeira quando tem valor e é diferente de: (vazio) / false / nao / 0 / off.
+    Use ${^chave}...${/chave} para o comportamento inverso (mostra se falsa).
+
+  PARÂMETROS DE PREENCHIMENTO:
+    empresa, qualificacao_contratante, qualificacao_contratado, cidade_uf,
+    periodicidade_plano, duracao_plano, valor_total, qtde_parcelas, dia_vencimento,
+    valor_hora_tecnica, prazo_inadimplencia, multa_compensatoria_atraso,
+    multa_rescisao_imotivada, multa_confidencialidade, multa_rescisao_sem_justificativa,
+    prazo_atraso_justa_causa, multa_rescisao_justa_causa, foro_comarca,
+    local_data_assinatura, assinatura_contratante, assinatura_contratado
+
+  CHAVES DE BLOCO (booleanas):
+    tem_diagnostico, tem_plano_continuo,
+    modalidade_presencial, modalidade_remota, modalidade_hibrida,
+    pagamento_a_vista, pagamento_parcelado, pagamento_assinatura,
+    pagamento_hora_tecnica, pagamento_por_etapas
+  ================================================================================
+-->
+<style>
+  :root{
+    --ink:#20242c;
+    --ink-soft:#4c545f;
+    --accent:#3A2450;        /* roxo sóbrio — apenas texto/filetes */
+    --gold:#9C7526;
+    --line:#d8d3cb;
+    --paper:#ffffff;
+    --paper-tint:#faf9f6;
+    --mark:#fff6d6;          /* leve realce para parâmetros pendentes (opcional) */
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'Work Sans', sans-serif;
+    color:var(--ink);
+    background:#e9e7e2;
+    line-height:1.6;
+    font-size:13.5px;
+    padding:32px 0;
+  }
+  h1,h2,h3{font-family:'Fraunces', serif; font-weight:600; letter-spacing:-0.01em;}
+
+  /* Página A4 */
+  .page{
+    position:relative;
+    width:794px;
+    min-height:1123px;
+    margin:0 auto 28px;
+    background:var(--paper);
+    color:var(--ink);
+    padding:76px 72px 96px;
+    border:1px solid var(--line);
+    box-shadow:0 10px 30px rgba(58,36,80,0.10);
+  }
+  .page::before{
+    content:"";
+    position:absolute;
+    top:30px; left:72px; right:72px;
+    height:2px;
+    background:linear-gradient(90deg, var(--gold), transparent 80%);
+  }
+
+  /* Rodapé com filete + número */
+  .page-frame{
+    position:absolute;
+    left:72px; right:72px; bottom:44px;
+    padding-top:10px;
+    border-top:1px solid var(--line);
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:10.5px; letter-spacing:0.05em; text-transform:uppercase; color:var(--ink-soft);
+  }
+  .page-frame .num{color:var(--gold); font-variant-numeric:tabular-nums;}
+
+  /* Capa */
+  .cover{display:flex; flex-direction:column; justify-content:center; text-align:center;}
+  .cover::after{content:""; position:absolute; inset:44px; border:1px solid var(--line); pointer-events:none;}
+  .cover .inner{position:relative; z-index:1; padding:0 30px;}
+  .cover .eyebrow{font-size:12px; font-weight:600; letter-spacing:0.22em; text-transform:uppercase; color:var(--gold); margin-bottom:26px;}
+  .cover h1{font-size:44px; line-height:1.1; color:var(--accent); margin-bottom:10px;}
+  .cover .rule{width:120px; height:2px; background:var(--gold); margin:20px auto 28px;}
+  .cover .sub{font-family:'Fraunces',serif; font-style:italic; font-size:18px; color:var(--ink-soft); max-width:34ch; margin:0 auto 44px;}
+  .cover .parties{display:flex; flex-direction:column; gap:18px; margin-top:20px; text-align:left; font-size:13px;}
+  .cover .party{border:1px solid var(--line); border-left:4px solid var(--gold); padding:16px 20px; background:var(--paper-tint);}
+  .cover .party .role{font-size:11px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--gold); margin-bottom:6px;}
+  .cover .party .who{color:var(--ink); }
+  .cover .cover-date{margin-top:40px; font-size:13px; color:var(--ink-soft);}
+
+  /* Sumário */
+  .toc{margin-top:10px;}
+  .toc h2{font-size:22px; color:var(--accent); margin-bottom:20px;}
+  .toc ol{list-style:none; counter-reset:toc;}
+  .toc li{counter-increment:toc; display:flex; align-items:baseline; gap:10px; padding:9px 0; border-bottom:1px solid var(--line); font-size:13.5px;}
+  .toc li::before{content:counter(toc) "."; color:var(--gold); font-family:'Fraunces',serif; font-weight:600; min-width:22px;}
+  .toc .dots{flex:1; border-bottom:1px dotted var(--line); transform:translateY(-3px);}
+  .toc .pg{color:var(--ink-soft); font-variant-numeric:tabular-nums;}
+
+  /* Conteúdo jurídico */
+  .doc-title{font-size:26px; color:var(--accent); margin-bottom:6px; text-align:center;}
+  .doc-intro{color:var(--ink-soft); font-size:13.5px; margin:20px 0 26px; text-align:justify;}
+  .clause{margin-bottom:22px;}
+  .clause h2{
+    font-size:15px; font-weight:700; color:var(--accent);
+    text-transform:uppercase; letter-spacing:0.04em;
+    padding-bottom:8px; margin-bottom:12px; border-bottom:2px solid var(--gold);
+  }
+  .clause p{margin-bottom:10px; text-align:justify; color:var(--ink);}
+  .clause p.soft{color:var(--ink-soft);}
+  .clause .sub{margin-bottom:8px;}
+  ul.legal, ol.legal{margin:6px 0 12px 4px; padding-left:20px;}
+  ul.legal li, ol.legal li{margin-bottom:6px; text-align:justify;}
+  ul.legal{list-style:none; padding-left:0;}
+  ul.legal li{position:relative; padding-left:20px;}
+  ul.legal li::before{content:""; position:absolute; left:0; top:9px; width:6px; height:6px; border:1px solid var(--gold); border-radius:50%;}
+  .para{font-style:italic; color:var(--ink-soft); margin-bottom:10px; text-align:justify;}
+  .para b{font-style:normal; color:var(--ink);}
+
+  /* Assinaturas */
+  .signatures{margin-top:60px; display:flex; flex-direction:column; gap:48px;}
+  .sign-line{text-align:center;}
+  .sign-line .rule{width:320px; max-width:80%; margin:0 auto 8px; border-top:1px solid var(--ink);}
+  .sign-line .cap{font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--gold); font-weight:700;}
+  .sign-line .who{font-size:13px; color:var(--ink); margin-top:4px;}
+  .place-date{text-align:center; margin:36px 0 10px; color:var(--ink-soft);}
+
+  /* Realce sutil de parâmetro (só aparece se o valor não foi substituído) */
+  .opt{background:var(--mark); padding:0 2px; border-radius:2px;}
+
+  @media print{
+    @page{ size:A4; margin:0; }
+    html, body{background:#fff; padding:0; margin:0; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
+    *{-webkit-print-color-adjust:exact; print-color-adjust:exact;}
+    .page{width:210mm; min-height:297mm; margin:0; border:none; box-shadow:none; page-break-after:always; break-after:page;}
+    .page:last-child{page-break-after:auto; break-after:auto;}
+    .opt{background:transparent;}
+  }
+</style>
+</head>
+<body>
+
+  <!-- PÁGINA 1 — CAPA / QUALIFICAÇÃO DAS PARTES -->
+  <section class="page cover">
+    <div class="inner">
+      <div class="eyebrow">Instrumento Particular</div>
+      <h1>Contrato de Prestação de Serviços</h1>
+      <div class="rule"></div>
+      <div class="sub">Serviços de saúde mental e segurança psicológica no ambiente corporativo — NR-1.</div>
+
+      <div class="parties">
+        <div class="party">
+          <div class="role">Contratante (Empresa)</div>
+          <div class="who">${qualificacao_contratante}</div>
+        </div>
+        <div class="party">
+          <div class="role">Contratado (Psicólogo)</div>
+          <div class="who">${qualificacao_contratado}</div>
+        </div>
+      </div>
+
+      <div class="cover-date">${cidade_uf}</div>
+    </div>
+    <div class="page-frame"><span>Contrato · NR-1</span><span class="num">01</span></div>
+  </section>
+
+  <!-- PÁGINA 2 — SUMÁRIO -->
+  <section class="page toc">
+    <h2>Sumário</h2>
+    <ol>
+      <li>Objeto do Contrato <span class="dots"></span><span class="pg">3</span></li>
+      <li>Duração do Contrato <span class="dots"></span><span class="pg">4</span></li>
+      <li>Investimento e Pagamento <span class="dots"></span><span class="pg">4</span></li>
+      <li>Obrigações das Partes <span class="dots"></span><span class="pg">5</span></li>
+      <li>Confidencialidade e Sigilo Profissional <span class="dots"></span><span class="pg">6</span></li>
+      <li>Uso de Imagem, Vídeo e Material Visual <span class="dots"></span><span class="pg">7</span></li>
+      <li>Rescisão Contratual <span class="dots"></span><span class="pg">8</span></li>
+      <li>Disposições Gerais <span class="dots"></span><span class="pg">9</span></li>
+    </ol>
+    <p class="doc-intro" style="margin-top:40px;">
+      As Partes concordam em firmar este Contrato de Prestação de Serviços, seguindo os artigos 421,
+      421-A e 422 do Código Civil, e estabelecem as seguintes cláusulas e condições para garantir a
+      segurança, confidencialidade, exclusividade e cumprimento das obrigações descritas.
+    </p>
+    <div class="page-frame"><span>Contrato · NR-1</span><span class="num">02</span></div>
+  </section>
+
+  <!-- PÁGINA 3 — CLÁUSULA 1: OBJETO -->
+  <section class="page">
+    <div class="clause">
+      <h2>Cláusula 1ª — Objeto do Contrato</h2>
+      <p><b>1.1</b> O presente contrato tem como objeto a prestação dos seguintes serviços:</p>
+      <div class="sub">
+        ${#tem_diagnostico}<p><b>Diagnóstico:</b> visa a análise da saúde mental e segurança psicológica no
+          ambiente corporativo para fins de futuras intervenções e implementações, a serem contratadas
+          posteriormente.</p>${/tem_diagnostico}
+        ${#tem_plano_continuo}<p><b>Plano ${periodicidade_plano} de consultoria e intervenção</b> voltados à
+          promoção de saúde mental e segurança psicológica no ambiente corporativo, por meio da implementação
+          de práticas, programas, treinamentos, diagnósticos e outras ações conforme a demanda da
+          CONTRATANTE.</p>${/tem_plano_continuo}
+      </div>
+
+      <p><b>1.2</b> A atuação do CONTRATADO pode incluir, entre outras, as seguintes atividades:</p>
+      <ul class="legal">
+        <li>Realização de Diagnóstico de Riscos Psicossociais (DRPS);</li>
+        <li>Desenvolvimento e execução de Programas Contínuos de Saúde Mental;</li>
+        <li>Planejamento e realização de treinamentos, oficinas, rodas de conversa, palestras e ações de sensibilização;</li>
+        <li>Consultoria para melhoria do clima organizacional e gestão emocional no trabalho;</li>
+        <li>Apoio em processos de retorno ao trabalho, prevenção de afastamentos, redução de absenteísmo e promoção do engajamento;</li>
+        <li>Elaboração de relatórios técnicos e recomendações estratégicas fundamentadas em normas legais e boas práticas, como a NR-1, diretrizes da OMS, diretrizes de ESG e documentos da Fundacentro/MTE;</li>
+        <li>Acompanhamento técnico de programas de saúde mental desenvolvidos internamente pela CONTRATANTE.</li>
+      </ul>
+
+      <p><b>1.3</b> Os serviços poderão ser prestados de forma pontual (diagnóstico) ou contínua (planos
+        mensais, semestrais ou anuais), com escopo e duração definidos em anexo (Proposta Comercial/orçamento
+        enviado pelo psicólogo), que poderá ser ajustado caso a caso entre as partes, de forma flexível e
+        personalizada, conforme a realidade da CONTRATANTE.</p>
+
+      <p class="soft"><b>1.4</b> O presente contrato é de natureza consultiva, preventiva e educacional, não
+        substituindo acompanhamentos clínicos ou diagnósticos individuais, salvo se pactuado
+        expressamente entre as partes.</p>
+      <p class="soft"><b>1.5</b> O CONTRATADO atuará com base na legislação vigente, no código de ética de sua
+        profissão, e nas boas práticas aplicáveis à promoção de saúde organizacional.</p>
+      <p class="soft"><b>1.6</b> Ainda que parte das metodologias utilizadas pelo CONTRATADO estejam alinhadas à
+        Norma Regulamentadora NR-1 e às diretrizes de gestão de riscos psicossociais no ambiente
+        corporativo, os serviços contratados não se limitam à aplicação da NR-1, tampouco dependem de
+        qualquer exigência legal vigente para sua execução.</p>
+      <p class="para"><b>Parágrafo primeiro:</b> A CONTRATANTE reconhece que a proposta do CONTRATADO é
+        promover saúde mental e segurança psicológica de forma estratégica, preventiva e personalizada,
+        contribuindo para a melhoria do clima organizacional, do bem-estar dos colaboradores e da
+        performance da empresa como um todo — independentemente da existência de obrigação normativa
+        específica.</p>
+      <p class="para"><b>Parágrafo segundo:</b> A CONTRATANTE reconhece que a implementação de programas de
+        saúde mental e ações de cuidado psicossocial no ambiente de trabalho é uma escolha legítima e
+        autônoma da organização, alinhada a princípios de responsabilidade social, gestão humanizada e
+        valorização do capital humano.</p>
+      <p class="soft"><b>1.7</b> Os serviços descritos podem ser contratados para empresas de todos os portes e
+        segmentos, incluindo setor público, terceiro setor e projetos autônomos, conforme pactuação
+        entre as partes.</p>
+      <p class="soft"><b>1.8</b> Todos os materiais, ideias, métodos, designs, ilustrações, textos, modelos de
+        documentos, apresentações, estratégias, ferramentas, recursos visuais ou quaisquer outros
+        conteúdos utilizados ou desenvolvidos pelo CONTRATADO — incluindo adaptações personalizadas
+        para a realidade da CONTRATANTE — são de propriedade intelectual exclusiva do CONTRATADO.</p>
+      <p class="para"><b>Parágrafo primeiro:</b> Esses conteúdos não poderão ser copiados, reproduzidos,
+        modificados, comercializados, redistribuídos, utilizados em treinamentos internos ou
+        compartilhados com terceiros, sem autorização prévia, expressa e por escrito do CONTRATADO, sob
+        pena de violação aos direitos autorais (Lei nº 9.610/98) e sujeição à responsabilização civil e
+        criminal.</p>
+      <p class="para"><b>Parágrafo segundo:</b> A CONTRATANTE reconhece que a originalidade, o know-how e o
+        acervo técnico do CONTRATADO fazem parte do valor dos serviços contratados, e que qualquer uso
+        indevido poderá ensejar, além da rescisão contratual por justa causa, a cobrança de multa e
+        indenização por perdas e danos.</p>
+    </div>
+    <div class="page-frame"><span>Objeto do Contrato</span><span class="num">03</span></div>
+  </section>
+
+  <!-- PÁGINA 4 — CLÁUSULAS 2 e 3: DURAÇÃO / INVESTIMENTO -->
+  <section class="page">
+    <div class="clause">
+      <h2>Cláusula 2ª — Duração do Contrato</h2>
+      <p><b>2.1</b> O presente contrato poderá ter diversos tipos de durabilidade, a depender do serviço
+        contratado. São eles:</p>
+      <ul class="legal">
+        ${#tem_diagnostico}<li><b>Diagnóstico:</b> serviço pontual, com durabilidade imediata;</li>${/tem_diagnostico}
+        ${#tem_plano_continuo}<li><b>Plano contínuo:</b> serviço recorrente com duração de ${duracao_plano};</li>${/tem_plano_continuo}
+      </ul>
+      <p>conforme especificado na Proposta Comercial em anexo, podendo o serviço contratado ser renovado
+        por acordo escrito entre as partes.</p>
+
+      <p><b>2.2</b> Os serviços poderão ser prestados:</p>
+      <ul class="legal">
+        ${#modalidade_presencial}<li>de forma <b>presencial</b>, nas instalações da empresa;</li>${/modalidade_presencial}
+        ${#modalidade_remota}<li>de forma <b>remota</b>, por meio de videochamadas e ferramentas digitais;</li>${/modalidade_remota}
+        ${#modalidade_hibrida}<li>de <b>forma híbrida</b>, com atividades presenciais e online.</li>${/modalidade_hibrida}
+      </ul>
+
+      <p class="soft"><b>2.3</b> Os dias e horários de execução serão definidos em comum acordo, podendo variar
+        conforme a necessidade da CONTRATANTE e a agenda do CONTRATADO.</p>
+      <p class="soft"><b>2.4</b> As partes poderão ajustar cronograma, entregas e prioridades por e-mail,
+        proposta anexa ou instrumento específico, desde que respeitado o objeto contratual.</p>
+    </div>
+
+    <div class="clause">
+      <h2>Cláusula 3ª — Investimento e Pagamento</h2>
+      <p><b>3.1</b> O valor total dos serviços será de ${valor_total}, que deverá ser pago de acordo com o
+        indicado abaixo, conforme modalidade escolhida pelas partes:</p>
+      <ul class="legal">
+        ${#pagamento_a_vista}<li>À vista, em parcela única, mediante transferência bancária, boleto ou Pix, no ato da assinatura do contrato ou conforme acordado em anexo;</li>${/pagamento_a_vista}
+        ${#pagamento_parcelado}<li>Parcelado em até ${qtde_parcelas} vezes mensais, fixas e sucessivas, via boleto bancário ou Pix, com vencimento todo dia ${dia_vencimento} de cada mês;</li>${/pagamento_parcelado}
+        ${#pagamento_assinatura}<li>Plano mensal de assinatura ou consultoria recorrente, com emissão de fatura mensal e renovação automática, salvo denúncia expressa com 15 (quinze) dias de antecedência;</li>${/pagamento_assinatura}
+        ${#pagamento_hora_tecnica}<li>Por hora técnica efetivamente utilizada, ao custo de ${valor_hora_tecnica} por hora, com emissão de relatório de horas ao final de cada período e cobrança mediante fatura mensal;</li>${/pagamento_hora_tecnica}
+        ${#pagamento_por_etapas}<li>Pagamento por etapas concluídas, conforme cronograma e entregas previstos em anexo, com emissão de cobrança ao final de cada etapa aprovada.</li>${/pagamento_por_etapas}
+      </ul>
+      <p class="para"><b>Parágrafo único:</b> O CONTRATADO poderá incluir encargos operacionais e custos
+        administrativos nos valores cobrados, especialmente no caso de personalização de serviços,
+        deslocamentos ou contratação de terceiros, mediante prévia informação à CONTRATANTE.</p>
+
+      <p><b>3.2</b> Em caso de inadimplência por período superior a ${prazo_inadimplencia}, incidirá sobre o
+        valor devido:</p>
+      <ul class="legal">
+        <li>${multa_compensatoria_atraso}</li>
+        <li>Multa moratória de 2% (dois por cento);</li>
+        <li>Juros de mora de 1% (um por cento) ao mês, calculados proporcionalmente aos dias de atraso;</li>
+        <li>Atualização monetária com base no índice IPCA.</li>
+      </ul>
+      <p class="para"><b>Parágrafo único:</b> Além disso, o CONTRATADO poderá suspender a prestação dos serviços
+        imediatamente até a regularização dos débitos, sem prejuízo do direito de rescisão contratual por
+        justa causa, se a inadimplência persistir por mais de 15 (quinze) dias corridos.</p>
+
+      <p><b>3.3</b> Em caso de rescisão imotivada pela CONTRATANTE, após a formalização do contrato e início
+        das obrigações do CONTRATADO, será devida uma ${multa_rescisao_imotivada}, sem prejuízo do
+        pagamento proporcional pelos serviços já prestados.</p>
+      <p class="para"><b>Parágrafo único:</b> A multa não será aplicada caso a rescisão decorra de descumprimento
+        contratual por parte do CONTRATADO, devidamente comprovado e formalmente comunicado.</p>
+    </div>
+    <div class="page-frame"><span>Duração · Investimento</span><span class="num">04</span></div>
+  </section>
+
+  <!-- PÁGINA 5 — CLÁUSULA 4: OBRIGAÇÕES -->
+  <section class="page">
+    <div class="clause">
+      <h2>Cláusula 4ª — Obrigações das Partes</h2>
+      <p><b>4.1</b> São obrigações do CONTRATADO:</p>
+      <ol class="legal" type="I">
+        <li>Prestar os serviços com ética, sigilo profissional e respeito às normas legais e técnicas;</li>
+        <li>Cumprir os prazos e atividades previamente acordados com a CONTRATANTE;</li>
+        <li>Manter comunicação clara e frequente com a CONTRATANTE sobre o andamento dos trabalhos;</li>
+        <li>Sugerir melhorias e soluções baseadas em sua experiência e formação, sem garantir resultados específicos;</li>
+        <li>Atuar com base em metodologia própria ou recomendada, com liberdade para adequar à realidade da empresa;</li>
+        <li>Atuar conforme as diretrizes da psicologia organizacional, promovendo saúde mental no ambiente de trabalho;</li>
+        <li>Elaborar materiais, relatórios, intervenções e entregas de acordo com o combinado em proposta anexa;</li>
+        <li>Informar prontamente à CONTRATANTE sobre situações que possam afetar a continuidade do serviço.</li>
+      </ol>
+
+      <p><b>4.2</b> São obrigações da CONTRATANTE:</p>
+      <ol class="legal" type="I">
+        <li>Disponibilizar informações, acessos, recursos, dados e estrutura necessários para a execução dos serviços;</li>
+        <li>Zelar pela participação dos colaboradores envolvidos nas ações propostas;</li>
+        <li>Efetuar os pagamentos devidos dentro dos prazos acordados e nas condições pactuadas;</li>
+        <li>Respeitar os limites de atuação do CONTRATADO e suas diretrizes profissionais;</li>
+        <li>Respeitar os limites éticos e técnicos da atuação profissional do CONTRATADO;</li>
+        <li>Garantir a participação e engajamento mínimo dos colaboradores quando necessário.</li>
+      </ol>
+
+      <p><b>4.3</b> Não será de responsabilidade do CONTRATADO:</p>
+      <ol class="legal" type="I">
+        <li>A garantia de resultados, uma vez que dependem de múltiplos fatores alheios à sua atuação e trata-se de uma relação de meio (e não de fim);</li>
+        <li>Adesão, frequência ou comportamento dos participantes internos nas atividades;</li>
+        <li>A atuação clínica individual sem contrato específico para tanto;</li>
+        <li>A tomada de decisões organizacionais com base exclusiva em suas recomendações;</li>
+        <li>Problemas decorrentes de omissão ou fornecimento incompleto de dados por parte da CONTRATANTE;</li>
+        <li>Mudanças legislativas repentinas, como alterações na NR-1 ou diretrizes do MTE;</li>
+        <li>Interferência de terceiros ou de decisões internas da empresa que comprometam os resultados.</li>
+      </ol>
+    </div>
+    <div class="page-frame"><span>Obrigações das Partes</span><span class="num">05</span></div>
+  </section>
+
+  <!-- PÁGINA 6 — CLÁUSULA 5: CONFIDENCIALIDADE -->
+  <section class="page">
+    <div class="clause">
+      <h2>Cláusula 5ª — Da Confidencialidade e Sigilo Profissional</h2>
+      <p><b>5.1</b> O CONTRATADO se compromete a preservar o sigilo absoluto de todas as informações obtidas no
+        exercício das atividades contratadas, especialmente aquelas que envolvam dados pessoais, sensíveis,
+        clínicos, históricos profissionais ou comportamentais de colaboradores, dirigentes ou quaisquer
+        membros da CONTRATANTE.</p>
+      <p><b>5.2</b> Nenhum dado pessoal ou sensível será compartilhado, divulgado ou utilizado fora do escopo
+        deste contrato sem o prévio e expresso consentimento do titular da informação, exceto nos casos
+        previstos em lei, por determinação judicial ou por exigência de autoridade competente, sendo o
+        CONTRATADO responsável por garantir o cumprimento da legislação vigente, inclusive a Lei Geral de
+        Proteção de Dados (Lei nº 13.709/18).</p>
+      <p><b>5.3</b> A violação do sigilo profissional por parte do CONTRATADO ensejará responsabilização civil,
+        ética e criminal, incluindo sanções disciplinares perante o respectivo conselho de classe e eventual
+        indenização por danos morais e materiais causados à parte lesada.</p>
+      <p><b>5.4</b> Da mesma forma, a CONTRATANTE compromete-se a manter sob sigilo todos os documentos,
+        relatórios, materiais, metodologias, estratégias, avaliações, conteúdos ou quaisquer informações
+        confidenciais fornecidas pelo CONTRATADO ou acessadas em decorrência da prestação dos serviços.</p>
+      <p><b>5.5</b> As obrigações previstas nesta cláusula se estendem a prepostos, colaboradores, fornecedores,
+        parceiros e quaisquer terceiros que, direta ou indiretamente, tenham acesso às informações sigilosas
+        em razão da execução deste contrato.</p>
+      <p><b>5.6</b> As partes reconhecem que a confidencialidade constitui elemento essencial desta relação
+        contratual, motivo pelo qual qualquer violação poderá ensejar a rescisão por justa causa, além de
+        ${multa_confidencialidade}, sem prejuízo da responsabilização por perdas e danos, lucros cessantes e
+        outras sanções previstas em lei.</p>
+      <p><b>5.7</b> As obrigações de sigilo e confidencialidade previstas nesta cláusula permanecerão em vigor
+        mesmo após o término ou rescisão deste contrato, por prazo indeterminado, em respeito ao caráter
+        permanente da proteção ética, técnica e legal das informações obtidas em razão desta relação.</p>
+    </div>
+    <div class="page-frame"><span>Confidencialidade</span><span class="num">06</span></div>
+  </section>
+
+  <!-- PÁGINA 7 — CLÁUSULA 6: USO DE IMAGEM -->
+  <section class="page">
+    <div class="clause">
+      <h2>Cláusula 6ª — Uso de Imagem, Vídeo e Material Visual</h2>
+      <p><b>6.1</b> O CONTRATADO poderá utilizar, para fins de portfólio, divulgação institucional ou
+        publicações educativas, imagens, vídeos, trechos de eventos, áudios ou depoimentos captados durante
+        a execução dos serviços, desde que obtenha o consentimento prévio, livre e expresso da CONTRATANTE
+        e, quando aplicável, dos colaboradores envolvidos.</p>
+      <p><b>6.2</b> A CONTRATANTE poderá, por sua vez, utilizar registros das ações realizadas pelo CONTRATADO em
+        seus canais de comunicação interna ou externa, desde que não exponha a identidade, imagem, marca
+        pessoal, voz ou conteúdo exclusivo do CONTRATADO sem autorização expressa e específica.</p>
+      <p><b>6.3</b> O uso de imagem, voz e depoimentos dos colaboradores participantes das atividades realizadas
+        no âmbito deste contrato está condicionado à assinatura de termo individual de autorização, que
+        deverá ser coletado previamente pela CONTRATANTE ou pelo CONTRATADO, conforme ajustado entre as
+        partes.</p>
+      <p><b>6.4</b> Fica expressamente vedada à CONTRATANTE a utilização dos registros das atividades para
+        finalidades comerciais, promocionais ou de treinamento interno sem a devida autorização por escrito
+        do CONTRATADO, quando essa utilização envolver a imagem ou a autoria do mesmo.</p>
+      <p><b>6.5</b> O descumprimento das disposições desta cláusula por qualquer das partes poderá ensejar
+        responsabilização civil por uso indevido de imagem e propriedade intelectual, além de eventual
+        rescisão contratual por justa causa, sem prejuízo de indenizações por perdas e danos, lucros
+        cessantes e demais prejuízos sofridos.</p>
+    </div>
+    <div class="page-frame"><span>Uso de Imagem</span><span class="num">07</span></div>
+  </section>
+
+  <!-- PÁGINA 8 — CLÁUSULA 7: RESCISÃO -->
+  <section class="page">
+    <div class="clause">
+      <h2>Cláusula 7ª — Rescisão Contratual</h2>
+      <p><b>7.1</b> O contrato poderá ser rescindido por qualquer das partes, a qualquer tempo, mediante
+        notificação formal por escrito, com antecedência mínima de 30 (trinta) dias. Durante este período,
+        as obrigações contratuais continuarão em vigor normalmente.</p>
+      <p><b>7.2</b> Caso a CONTRATANTE deseje rescindir o contrato sem justificativa antes do término acordado,
+        deverá pagar ${multa_rescisao_sem_justificativa}, conforme pactuado entre as partes, sem prejuízo das
+        obrigações vencidas.</p>
+      <p><b>7.3</b> A parte prejudicada poderá rescindir o contrato imediatamente, por justa causa, nos seguintes casos:</p>
+      <ol class="legal" type="I">
+        <li>Descumprimento de cláusulas contratuais essenciais;</li>
+        <li>Atraso superior a ${prazo_atraso_justa_causa} no pagamento de qualquer parcela;</li>
+        <li>Atitudes que atentem contra a reputação, integridade, ética ou segurança da parte contrária;</li>
+        <li>Impossibilidade de continuidade dos serviços por fatores alheios à vontade do CONTRATADO, desde que devidamente comprovados.</li>
+      </ol>
+      <p><b>7.4</b> Caso o CONTRATADO rescinda o contrato por justa causa, em razão de infração contratual
+        praticada pela CONTRATANTE, esta ficará obrigada a pagar:</p>
+      <ol class="legal" type="I">
+        <li>Uma ${multa_rescisao_justa_causa}, como forma de reparação pelos danos operacionais e expectativa frustrada de continuidade do serviço;</li>
+        <li>O reembolso de todos os valores eventualmente já investidos pelo CONTRATADO na estruturação e
+          planejamento da prestação dos serviços, desde que devidamente comprovados, incluindo, mas não se
+          limitando a: bloqueio de agenda, produção de materiais personalizados, reuniões prévias,
+          deslocamentos ou contratação de terceiros.</li>
+      </ol>
+      <p class="para"><b>Parágrafo primeiro:</b> A rescisão por justa causa não isenta a CONTRATANTE do pagamento
+        proporcional pelos serviços efetivamente prestados até a data da ruptura contratual.</p>
+      <p class="para"><b>Parágrafo segundo:</b> A multa prevista nesta cláusula será exigível independentemente de
+        notificação prévia ou constituição em mora, bastando a comunicação formal da rescisão e a descrição
+        da infração cometida.</p>
+      <p class="soft"><b>7.5</b> Em caso de rescisão por iniciativa da CONTRATANTE após o início dos serviços, não
+        haverá reembolso dos valores já pagos, salvo se expressamente pactuado em cláusula específica ou se a
+        rescisão ocorrer dentro do prazo legal de arrependimento (sete dias úteis, quando aplicável).</p>
+      <p class="soft"><b>7.6</b> A rescisão contratual não exime nenhuma das partes do adimplemento das obrigações
+        vencidas ou já assumidas até a data de encerramento, inclusive pagamento proporcional pelos serviços
+        prestados.</p>
+    </div>
+    <div class="page-frame"><span>Rescisão Contratual</span><span class="num">08</span></div>
+  </section>
+
+  <!-- PÁGINA 9 — CLÁUSULA 8: DISPOSIÇÕES GERAIS + ASSINATURAS -->
+  <section class="page">
+    <div class="clause">
+      <h2>Cláusula 8ª — Disposições Gerais</h2>
+      <p class="soft"><b>8.1</b> A relação entre as partes é de natureza exclusivamente contratual, inexistindo qualquer vínculo empregatício, associativo ou societário.</p>
+      <p class="soft"><b>8.2</b> Os signatários asseguram que são os representantes legais competentes para assumir em nome das Partes as obrigações descritas neste Contrato e representar de forma efetiva seus interesses.</p>
+      <p class="soft"><b>8.3</b> A impossibilidade de prestação do serviço causada por incorreção em informação fornecida pela CONTRATANTE ou por omissão no provimento de informação essencial não caracterizará descumprimento de obrigação por parte do CONTRATADO.</p>
+      <p class="soft"><b>8.4</b> Todos os direitos de propriedade intelectual relativos aos resultados dos serviços prestados no âmbito deste contrato serão de titularidade exclusiva do CONTRATADO, independentemente de estarem finalizados ou não.</p>
+      <p class="para"><b>Parágrafo único:</b> Qualquer exceção a essa titularidade, como cessão de direitos ou concessão de licenças específicas de uso, deverá ser formalizada por escrito entre as partes.</p>
+      <p class="soft"><b>8.5</b> As Partes observarão as disposições da Lei 13.709/18 (Proteção de Dados) e da Lei 12.965/14 (Marco Civil da Internet), e reconhecem que dados pessoais possam ser reciprocamente coletados em decorrência da execução do objeto do Contrato, tratados estritamente para garantir sua execução ou atender obrigações legais.</p>
+      <p class="soft"><b>8.6</b> Os tributos decorrentes deste contrato são de responsabilidade exclusiva da parte contribuinte, conforme a legislação tributária aplicável.</p>
+      <p class="soft"><b>8.7</b> Empregados, parceiros, contratados ou sócios de cada Parte não têm vínculo empregatício com a outra, sendo responsabilidade exclusiva de cada Parte o recolhimento dos encargos de seus próprios empregados e terceiros.</p>
+      <p class="soft"><b>8.8</b> Se qualquer das Partes sofrer ação judicial cujo objeto seja de responsabilidade da outra, deverá notificá-la imediatamente para que promova a sua defesa e assuma o processo.</p>
+      <p class="soft"><b>8.9</b> A tolerância ou o não exercício de direitos por uma das Partes em virtude do inadimplemento da outra não induzirão novação, precedente ou alteração dos pactos.</p>
+      <p class="soft"><b>8.10</b> Caso qualquer disposição seja considerada nula, ilegal ou inexequível, as Partes negociarão de boa-fé nova redação satisfatória que reflita suas intenções, substituindo a cláusula afetada.</p>
+      <p class="soft"><b>8.11</b> As Partes anuem à validade e eficácia deste Instrumento (arts. 104 e 107 do Código Civil), que poderá ser assinado em formato eletrônico, inclusive por certificados não emitidos pela ICP-Brasil (art. 10, §2º da MP 2200-2/2001 e art. 6º do Decreto 10.278/2020), renunciando ao direito de contestar a validade das assinaturas eletrônicas.</p>
+      <p><b>8.12</b> As Partes elegem o foro da comarca de ${foro_comarca} para dirimir todas as questões oriundas do Contrato, renunciando a qualquer outro, por mais privilegiado que seja.</p>
+    </div>
+
+    <p class="soft" style="text-align:justify;">E, por estarem de pleno acordo com o inteiro conteúdo deste Contrato, firmam as Partes o presente instrumento particular, de maneira eletrônica.</p>
+
+    <div class="place-date">${local_data_assinatura}</div>
+
+    <div class="signatures">
+      <div class="sign-line">
+        <div class="rule"></div>
+        <div class="cap">Contratante ou Empresa</div>
+        <div class="who">${assinatura_contratante}</div>
+      </div>
+      <div class="sign-line">
+        <div class="rule"></div>
+        <div class="cap">Contratado ou Profissional</div>
+        <div class="who">${assinatura_contratado}</div>
+      </div>
+    </div>
+    <div class="page-frame"><span>Disposições Gerais</span><span class="num">09</span></div>
+  </section>
+
+</body>
+</html>
