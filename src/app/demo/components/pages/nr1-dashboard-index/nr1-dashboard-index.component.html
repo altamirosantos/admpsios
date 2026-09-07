@@ -1,0 +1,156 @@
+<p-toast></p-toast>
+
+<div class="grid">
+    <div class="col-12">
+        <div class="card">
+            <!-- Cabeçalho + seleção de aplicação -->
+            <div class="flex flex-column md:flex-row md:justify-content-between md:align-items-center gap-3 mb-4 no-print">
+                <div>
+                    <h4 class="m-0">Dashboard DRPS — NR-1</h4>
+                    <span class="text-color-secondary">Diagnóstico de Riscos Psicossociais por setor</span>
+                </div>
+
+                <div class="flex flex-column sm:flex-row gap-2 align-items-stretch sm:align-items-center">
+                    <p-dropdown
+                        [options]="aplicacaoOptions"
+                        [(ngModel)]="aplicacaoSelecionadaId"
+                        (onChange)="onAplicacaoChange()"
+                        [filter]="true"
+                        [placeholder]="loadingAplicacoes ? 'Carregando...' : 'Selecione a aplicação (setor)'"
+                        styleClass="w-full sm:w-25rem"
+                        appendTo="body">
+                    </p-dropdown>
+
+                    <button
+                        pButton
+                        type="button"
+                        icon="pi pi-file-pdf"
+                        label="Exportar PDF"
+                        class="p-button-outlined"
+                        [disabled]="!resumo"
+                        (click)="exportarPdf()">
+                    </button>
+                </div>
+            </div>
+
+            <!-- Estado inicial -->
+            <div *ngIf="!aplicacaoSelecionadaId" class="p-4 text-center text-color-secondary">
+                <i class="pi pi-chart-bar text-4xl mb-2 block"></i>
+                Selecione uma aplicação para visualizar as métricas do DRPS.
+            </div>
+
+            <!-- Carregando -->
+            <div *ngIf="loadingMetricas" class="p-4 text-center text-color-secondary">
+                <i class="pi pi-spin pi-spinner text-2xl"></i>
+                <span class="ml-2">Calculando métricas...</span>
+            </div>
+
+            <!-- Cabeçalho do quadro (para impressão) -->
+            <div *ngIf="resumo && !loadingMetricas" class="print-header hidden">
+                <h3 class="m-0">DRPS — Diagnóstico de Riscos Psicossociais</h3>
+                <p class="m-0" *ngIf="aplicacaoSelecionada">{{ aplicacaoLabel(aplicacaoSelecionada) }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPIs -->
+    <ng-container *ngIf="resumo && !loadingMetricas">
+        <div class="col-12 md:col-4">
+            <div class="card mb-0">
+                <span class="block text-500 font-medium mb-2">Gravidade Geral</span>
+                <div class="flex align-items-center gap-2">
+                    <span class="text-900 font-medium text-3xl">{{ resumo.gravidadeGeral | number:'1.2-2' }}</span>
+                    <p-tag [value]="resumo.gravidadeGeralClasse" [severity]="nivelSeverity(resumo.gravidadeGeralClasse)"></p-tag>
+                </div>
+                <span class="text-500 text-sm">Média (0 a 3) da gravidade dos tópicos</span>
+            </div>
+        </div>
+        <div class="col-12 md:col-4">
+            <div class="card mb-0">
+                <span class="block text-500 font-medium mb-2">Respostas Consideradas</span>
+                <span class="text-900 font-medium text-3xl">{{ resumo.totalRespostas }}</span>
+            </div>
+        </div>
+        <div class="col-12 md:col-4">
+            <div class="card mb-0">
+                <span class="block text-500 font-medium mb-2">Tópicos sem Probabilidade</span>
+                <div class="flex align-items-center gap-2">
+                    <span class="text-900 font-medium text-3xl">{{ resumo.topicosPendentes }}</span>
+                    <p-tag *ngIf="resumo.topicosPendentes > 0" value="Pendente" severity="secondary"></p-tag>
+                </div>
+                <span class="text-500 text-sm">Informe a probabilidade para fechar a matriz de risco</span>
+            </div>
+        </div>
+
+        <!-- Resumo por Tópico + Matriz de Risco -->
+        <div class="col-12">
+            <div class="card">
+                <h5>Resumo por Tópico e Matriz de Risco</h5>
+                <p-table [value]="resumo.topicos" responsiveLayout="scroll" styleClass="p-datatable-sm">
+                    <ng-template pTemplate="header">
+                        <tr>
+                            <th>Fator de Risco (Tópico)</th>
+                            <th class="text-center">Respostas</th>
+                            <th class="text-center">Gravidade (média)</th>
+                            <th class="text-center">Gravidade</th>
+                            <th class="text-center no-print">Probabilidade</th>
+                            <th class="text-center print-only hidden">Probabilidade</th>
+                            <th class="text-center">Risco Final</th>
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="body" let-topico>
+                        <tr>
+                            <td>{{ topico.fator_risco }}</td>
+                            <td class="text-center">{{ topico.total_respostas }}</td>
+                            <td class="text-center">{{ topico.gravidade_media | number:'1.2-2' }}</td>
+                            <td class="text-center">
+                                <p-tag [value]="topico.gravidade_classe" [severity]="nivelSeverity(topico.gravidade_classe)"></p-tag>
+                            </td>
+                            <!-- Edição de probabilidade (não vai para o PDF) -->
+                            <td class="text-center no-print">
+                                <p-dropdown
+                                    [options]="probabilidadeOptions"
+                                    [ngModel]="probabilidadeValor(topico)"
+                                    (onChange)="onProbabilidadeChange(topico, $event.value)"
+                                    [disabled]="salvandoProbabilidade === topico.fator_risco"
+                                    placeholder="Definir"
+                                    styleClass="w-9rem"
+                                    appendTo="body">
+                                </p-dropdown>
+                            </td>
+                            <!-- Versão estática para impressão -->
+                            <td class="text-center print-only hidden">
+                                {{ topico.probabilidade_classe || '—' }}
+                            </td>
+                            <td class="text-center">
+                                <p-tag [value]="topico.risco_classe" [severity]="riscoSeverity(topico.risco_classe)"></p-tag>
+                            </td>
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="emptymessage">
+                        <tr>
+                            <td colspan="7" class="text-center text-color-secondary p-4">
+                                Nenhuma resposta registrada para esta aplicação ainda.
+                            </td>
+                        </tr>
+                    </ng-template>
+                </p-table>
+
+                <small class="text-color-secondary block mt-3">
+                    Gravidade: média da pontuação das respostas por tópico (Baixa=1, Média=2, Alta=3), com correção das perguntas invertidas.
+                    Risco Final: cruzamento Gravidade × Probabilidade conforme a matriz de risco da NR-01.
+                </small>
+            </div>
+        </div>
+
+        <!-- Gráfico: gravidade por tópico -->
+        <div class="col-12">
+            <div class="card">
+                <h5>Gravidade por Tópico</h5>
+                <div style="min-height: 420px;">
+                    <p-chart type="bar" [data]="chartData" [options]="chartOptions" height="420px"></p-chart>
+                </div>
+            </div>
+        </div>
+    </ng-container>
+</div>

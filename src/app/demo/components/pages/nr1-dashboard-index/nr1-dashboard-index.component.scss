@@ -1,0 +1,37 @@
+:host {
+    display: block;
+}
+
+// Elementos exclusivos de impressão ficam ocultos na tela.
+.print-only {
+    display: none !important;
+}
+
+// Impressão / exportação PDF: mostra só o quadro do DRPS, limpo.
+@media print {
+    .no-print {
+        display: none !important;
+    }
+
+    .print-only {
+        display: table-cell !important;
+    }
+
+    .print-header {
+        display: block !important;
+        margin-bottom: 1rem;
+    }
+
+    .card {
+        box-shadow: none !important;
+        border: none !important;
+        padding: 0 !important;
+    }
+
+    // Evita quebrar linhas da tabela entre páginas.
+    tr,
+    td,
+    th {
+        page-break-inside: avoid;
+    }
+}
