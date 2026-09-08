@@ -5,7 +5,8 @@ import {
     MetricaFatorRisco,
     MetricasNr1Service,
     ResumoMetricasNr1,
-    RiscoClasse
+    RiscoClasse,
+    SetorRespondido
 } from 'src/app/demo/service/metricas-nr1.service';
 
 interface SelectOption {
@@ -33,6 +34,10 @@ export class Nr1DashboardIndexComponent implements OnInit {
     aplicacaoSelecionada: AplicacaoNr1 | null = null;
 
     resumo: ResumoMetricasNr1 | null = null;
+
+    /** Filtro por setor (slicer da planilha). null = visão geral (todos os setores). */
+    setorOptions: SelectOption[] = [];
+    setorSelecionadoId: string | null = null;
 
     loadingAplicacoes = false;
     loadingMetricas = false;
@@ -76,13 +81,38 @@ export class Nr1DashboardIndexComponent implements OnInit {
 
     async onAplicacaoChange(): Promise<void> {
         this.resumo = null;
+        this.setorSelecionadoId = null;
+        this.setorOptions = [];
         this.aplicacaoSelecionada = this.aplicacoes.find((a) => a.id === this.aplicacaoSelecionadaId) ?? null;
 
         if (!this.aplicacaoSelecionadaId) {
             return;
         }
 
+        await this.carregarSetores();
         await this.carregarMetricas();
+    }
+
+    /** Muda o setor filtrado e recalcula (mantém a aplicação). */
+    async onSetorChange(): Promise<void> {
+        await this.carregarMetricas();
+    }
+
+    private async carregarSetores(): Promise<void> {
+        if (!this.aplicacaoSelecionadaId) {
+            return;
+        }
+
+        try {
+            const setores: SetorRespondido[] = await this.metricasService.listarSetores(this.aplicacaoSelecionadaId);
+            this.setorOptions = [
+                { label: 'Todos os setores (visão geral)', value: '' },
+                ...setores.map((s) => ({ label: `${s.setor_nome} (${s.total_respondentes})`, value: s.setor_id }))
+            ];
+        } catch (error) {
+            console.error('Erro ao carregar setores respondidos:', error);
+            this.setorOptions = [{ label: 'Todos os setores (visão geral)', value: '' }];
+        }
     }
 
     async carregarMetricas(): Promise<void> {
@@ -93,7 +123,8 @@ export class Nr1DashboardIndexComponent implements OnInit {
         this.loadingMetricas = true;
 
         try {
-            this.resumo = await this.metricasService.calcularMetricas(this.aplicacaoSelecionadaId);
+            const setorId = this.setorSelecionadoId || null;
+            this.resumo = await this.metricasService.calcularMetricas(this.aplicacaoSelecionadaId, setorId);
             this.atualizarGrafico();
         } catch (error) {
             console.error('Erro ao calcular métricas NR-1:', error);
@@ -117,7 +148,12 @@ export class Nr1DashboardIndexComponent implements OnInit {
         this.salvandoProbabilidade = topico.fator_risco;
 
         try {
-            await this.metricasService.salvarProbabilidade(this.aplicacaoSelecionadaId, topico.fator_risco, probabilidade);
+            await this.metricasService.salvarProbabilidade(
+                this.aplicacaoSelecionadaId,
+                topico.fator_risco,
+                probabilidade,
+                this.setorSelecionadoId || null
+            );
             // Recalcula para refletir a matriz de risco atualizada.
             await this.carregarMetricas();
             this.messageService.add({ severity: 'success', summary: 'Probabilidade salva', detail: topico.fator_risco, life: 2500 });
@@ -135,6 +171,14 @@ export class Nr1DashboardIndexComponent implements OnInit {
     }
 
     // --- Helpers de exibição ---
+
+    /** Rótulo do setor filtrado (para o cabeçalho de impressão). */
+    get setorSelecionadoLabel(): string {
+        if (!this.setorSelecionadoId) {
+            return 'Todos os setores (visão geral)';
+        }
+        return this.setorOptions.find((o) => o.value === this.setorSelecionadoId)?.label ?? '—';
+    }
 
     aplicacaoLabel(a: AplicacaoNr1): string {
         const empresa = a.filial?.empresa?.nome;

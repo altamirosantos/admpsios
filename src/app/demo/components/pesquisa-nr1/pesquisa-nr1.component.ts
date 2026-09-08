@@ -1,13 +1,15 @@
 import { Component, OnInit } from '@angular/core';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute } from '@angular/router';
 import {
+    OpcaoIdentificacao,
     PerguntaPublica,
     PesquisaNr1Service,
     RespostaItem,
     SituacaoToken
 } from 'src/app/demo/service/pesquisa-nr1.service';
 
-type Tela = 'CARREGANDO' | 'INVALIDO' | 'RESPONDIDO' | 'INDISPONIVEL' | 'QUESTIONARIO' | 'AGRADECIMENTO' | 'ERRO';
+type Tela = 'CARREGANDO' | 'INVALIDO' | 'RESPONDIDO' | 'INDISPONIVEL' | 'IDENTIFICACAO' | 'QUESTIONARIO' | 'AGRADECIMENTO' | 'ERRO';
 
 @Component({
     selector: 'app-pesquisa-nr1',
@@ -21,6 +23,15 @@ export class PesquisaNr1Component implements OnInit {
     nomeAplicacao: string | null = null;
     perguntas: PerguntaPublica[] = [];
 
+    /** Identificação (setor obrigatório / cargo opcional) informada pelo colaborador. */
+    setores: OpcaoIdentificacao[] = [];
+    cargos: OpcaoIdentificacao[] = [];
+    setorId: string | null = null;
+    cargoId: string | null = null;
+
+    /** URL de embed do YouTube (sanitizada) ou null se não houver vídeo. */
+    videoEmbedUrl: SafeResourceUrl | null = null;
+
     /** Índice da pergunta atual (0-based). */
     indiceAtual = 0;
 
@@ -32,7 +43,8 @@ export class PesquisaNr1Component implements OnInit {
 
     constructor(
         private readonly route: ActivatedRoute,
-        private readonly pesquisaService: PesquisaNr1Service
+        private readonly pesquisaService: PesquisaNr1Service,
+        private readonly sanitizer: DomSanitizer
     ) {}
 
     ngOnInit(): void {
@@ -47,6 +59,9 @@ export class PesquisaNr1Component implements OnInit {
             const resultado = await this.pesquisaService.carregarPorToken(this.token);
             this.nomeAplicacao = resultado.nomeAplicacao;
             this.perguntas = resultado.perguntas;
+            this.setores = resultado.setores;
+            this.cargos = resultado.cargos;
+            this.videoEmbedUrl = this.montarEmbedUrl(resultado.videoUrl);
             this.tela = this.telaPorSituacao(resultado.situacao);
         } catch (error) {
             console.error('Erro ao carregar questionário NR-1:', error);
@@ -62,9 +77,63 @@ export class PesquisaNr1Component implements OnInit {
             return 'INDISPONIVEL';
         }
         if (situacao === 'VALIDO' && this.perguntas.length > 0) {
-            return 'QUESTIONARIO';
+            // Antes das perguntas, o colaborador informa setor/cargo (etapa de identificação).
+            return 'IDENTIFICACAO';
         }
         return 'INVALIDO';
+    }
+
+    /** Setor é obrigatório para iniciar (as métricas agrupam por setor). */
+    get podeIniciar(): boolean {
+        return !!this.setorId;
+    }
+
+    /** Avança da tela de identificação para as perguntas. */
+    iniciarQuestionario(): void {
+        if (!this.podeIniciar) {
+            return;
+        }
+        this.indiceAtual = 0;
+        this.tela = 'QUESTIONARIO';
+        this.rolarTopo();
+    }
+
+    /**
+     * Converte um link do YouTube em URL de embed sanitizada.
+     * Aceita formatos watch?v=, youtu.be/, /embed/ e /shorts/.
+     * Retorna null se não for um link reconhecível.
+     */
+    private montarEmbedUrl(url: string | null): SafeResourceUrl | null {
+        const id = this.extrairYoutubeId(url);
+        if (!id) {
+            return null;
+        }
+        return this.sanitizer.bypassSecurityTrustResourceUrl(`https://www.youtube.com/embed/${id}`);
+    }
+
+    private extrairYoutubeId(url: string | null): string | null {
+        if (!url) {
+            return null;
+        }
+        const texto = url.trim();
+        // Tenta os padrões mais comuns do YouTube.
+        const padroes = [
+            /[?&]v=([a-zA-Z0-9_-]{11})/,        // watch?v=ID
+            /youtu\.be\/([a-zA-Z0-9_-]{11})/,   // youtu.be/ID
+            /\/embed\/([a-zA-Z0-9_-]{11})/,     // /embed/ID
+            /\/shorts\/([a-zA-Z0-9_-]{11})/     // /shorts/ID
+        ];
+        for (const p of padroes) {
+            const m = texto.match(p);
+            if (m && m[1]) {
+                return m[1];
+            }
+        }
+        // Caso venha apenas o ID puro (11 chars).
+        if (/^[a-zA-Z0-9_-]{11}$/.test(texto)) {
+            return texto;
+        }
+        return null;
     }
 
     // --- Estado da pergunta atual ---
@@ -174,6 +243,13 @@ export class PesquisaNr1Component implements OnInit {
             return;
         }
 
+        // Segurança: sem setor não há como agrupar as métricas.
+        if (!this.setorId) {
+            this.tela = 'IDENTIFICACAO';
+            this.mensagemErro = 'Informe o setor antes de enviar.';
+            return;
+        }
+
         this.enviando = true;
         this.mensagemErro = '';
 
@@ -183,7 +259,7 @@ export class PesquisaNr1Component implements OnInit {
         }));
 
         try {
-            await this.pesquisaService.submeterRespostas(this.token, payload);
+            await this.pesquisaService.submeterRespostas(this.token, payload, this.setorId, this.cargoId);
             this.tela = 'AGRADECIMENTO';
             this.rolarTopo();
         } catch (error: unknown) {

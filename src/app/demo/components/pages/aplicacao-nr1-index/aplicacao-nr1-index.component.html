@@ -41,7 +41,7 @@
                         <th scope="col" style="width: 130px">Status</th>
                         <th scope="col" style="width: 160px">Respostas</th>
                         <th scope="col" style="width: 150px">Criado em</th>
-                        <th scope="col" style="width: 90px">Ações</th>
+                        <th scope="col" style="width: 130px">Ações</th>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-aplicacao>
@@ -61,8 +61,12 @@
                         </td>
                         <td>{{ aplicacao.created_at ? (aplicacao.created_at | date: 'dd/MM/yyyy HH:mm') : '—' }}</td>
                         <td>
-                            <button pButton pRipple icon="pi pi-sync" class="p-button-rounded p-button-help"
-                                (click)="editarStatus(aplicacao)" pTooltip="Alterar status"></button>
+                            <div class="flex gap-2">
+                                <button pButton pRipple icon="pi pi-link" class="p-button-rounded p-button-secondary"
+                                    (click)="abrirLinks(aplicacao)" pTooltip="Ver links / enviar e-mails"></button>
+                                <button pButton pRipple icon="pi pi-sync" class="p-button-rounded p-button-help"
+                                    (click)="editarStatus(aplicacao)" pTooltip="Alterar status"></button>
+                            </div>
                         </td>
                     </tr>
                 </ng-template>
@@ -88,6 +92,25 @@
             <small class="p-error" *ngIf="submitted && !nome?.trim()">O nome é obrigatório.</small>
         </div>
 
+        <div class="field">
+            <label for="modo">Modo de geração</label>
+            <p-dropdown inputId="modo" [options]="modoOptions" [(ngModel)]="modoGeracao"
+                optionLabel="label" optionValue="value" appendTo="body"></p-dropdown>
+            <small class="text-color-secondary block mt-1">
+                <span *ngIf="modoGeracao === 'COLABORADORES'">Gera 1 link por colaborador cadastrado na filial. Setor e cargo são informados pelo colaborador ao responder.</span>
+                <span *ngIf="modoGeracao === 'QUANTIDADE'">Gera N tokens anônimos avulsos (sem vínculo com colaborador, sem e-mail).</span>
+            </small>
+        </div>
+
+        <div class="field">
+            <label for="videoUrl">Vídeo explicativo (YouTube) <span class="text-color-secondary">(opcional)</span></label>
+            <input id="videoUrl" type="text" pInputText [(ngModel)]="videoUrl"
+                placeholder="Ex.: https://www.youtube.com/watch?v=XXXXXXXXXXX" />
+            <small class="text-color-secondary block mt-1">
+                Cole o link do YouTube. Ele será exibido ao colaborador antes de escolher setor/cargo e iniciar o questionário.
+            </small>
+        </div>
+
         <div class="formgrid grid">
             <div class="field col-12 md:col-6">
                 <label for="empresa">Empresa <span class="text-red-500">*</span></label>
@@ -108,33 +131,44 @@
             </div>
         </div>
 
-        <div class="formgrid grid">
-            <div class="field col-12 md:col-6">
-                <label for="setor">Setor <span class="text-color-secondary">(opcional)</span></label>
-                <p-dropdown inputId="setor" [options]="setorOptions" [(ngModel)]="setorId"
-                    optionLabel="label" optionValue="value" [filter]="true" filterBy="label" [showClear]="true"
-                    [placeholder]="formEmpresaId ? 'Todos os setores' : 'Selecione a empresa primeiro'"
-                    [disabled]="!formEmpresaId" appendTo="body"></p-dropdown>
+        <!-- Setor/cargo/quantidade só se aplicam ao modo por QUANTIDADE.
+             No modo por colaboradores, setor/cargo vêm da resposta de cada um. -->
+        <ng-container *ngIf="modoGeracao === 'QUANTIDADE'">
+            <div class="formgrid grid">
+                <div class="field col-12 md:col-6">
+                    <label for="setor">Setor <span class="text-color-secondary">(opcional)</span></label>
+                    <p-dropdown inputId="setor" [options]="setorOptions" [(ngModel)]="setorId"
+                        optionLabel="label" optionValue="value" [filter]="true" filterBy="label" [showClear]="true"
+                        [placeholder]="formEmpresaId ? 'Todos os setores' : 'Selecione a empresa primeiro'"
+                        [disabled]="!formEmpresaId" appendTo="body"></p-dropdown>
+                </div>
+                <div class="field col-12 md:col-6">
+                    <label for="cargo">Cargo <span class="text-color-secondary">(opcional)</span></label>
+                    <p-dropdown inputId="cargo" [options]="cargoOptions" [(ngModel)]="cargoId"
+                        optionLabel="label" optionValue="value" [filter]="true" filterBy="label" [showClear]="true"
+                        [placeholder]="formEmpresaId ? 'Todos os cargos' : 'Selecione a empresa primeiro'"
+                        [disabled]="!formEmpresaId" appendTo="body"></p-dropdown>
+                </div>
             </div>
-            <div class="field col-12 md:col-6">
-                <label for="cargo">Cargo <span class="text-color-secondary">(opcional)</span></label>
-                <p-dropdown inputId="cargo" [options]="cargoOptions" [(ngModel)]="cargoId"
-                    optionLabel="label" optionValue="value" [filter]="true" filterBy="label" [showClear]="true"
-                    [placeholder]="formEmpresaId ? 'Todos os cargos' : 'Selecione a empresa primeiro'"
-                    [disabled]="!formEmpresaId" appendTo="body"></p-dropdown>
-            </div>
-        </div>
 
-        <div class="field">
-            <label for="quantidade">Quantidade de colaboradores <span class="text-red-500">*</span></label>
-            <p-inputNumber inputId="quantidade" [(ngModel)]="quantidadeColaboradores" [min]="1" [max]="10000"
-                [useGrouping]="false" [showButtons]="true" placeholder="Ex.: 250"
-                [ngClass]="{ 'ng-invalid ng-dirty': submitted && (!quantidadeColaboradores || quantidadeColaboradores < 1) }"></p-inputNumber>
-            <small class="p-error" *ngIf="submitted && (!quantidadeColaboradores || quantidadeColaboradores < 1)">
-                Informe a quantidade de colaboradores (mínimo 1).
-            </small>
-            <small class="text-color-secondary block mt-1">
-                Um token anônimo de acesso será gerado para cada colaborador.
+            <div class="field">
+                <label for="quantidade">Quantidade de colaboradores <span class="text-red-500">*</span></label>
+                <p-inputNumber inputId="quantidade" [(ngModel)]="quantidadeColaboradores" [min]="1" [max]="10000"
+                    [useGrouping]="false" [showButtons]="true" placeholder="Ex.: 250"
+                    [ngClass]="{ 'ng-invalid ng-dirty': submitted && (!quantidadeColaboradores || quantidadeColaboradores < 1) }"></p-inputNumber>
+                <small class="p-error" *ngIf="submitted && (!quantidadeColaboradores || quantidadeColaboradores < 1)">
+                    Informe a quantidade de colaboradores (mínimo 1).
+                </small>
+                <small class="text-color-secondary block mt-1">
+                    Um token anônimo de acesso será gerado para cada unidade.
+                </small>
+            </div>
+        </ng-container>
+
+        <div class="field" *ngIf="modoGeracao === 'COLABORADORES'">
+            <small class="text-color-secondary block">
+                Será gerado 1 link por colaborador cadastrado na filial selecionada. Colaboradores com e-mail
+                receberão o link automaticamente ao usar "Enviar por e-mail".
             </small>
         </div>
     </ng-template>
@@ -159,6 +193,88 @@
     </div>
     <ng-template pTemplate="footer">
         <button pButton pRipple label="Fechar" icon="pi pi-check" class="p-button-text" (click)="resultadoDialog = false"></button>
+    </ng-template>
+</p-dialog>
+
+<!-- Diálogo: links / tokens + envio por e-mail -->
+<p-dialog [(visible)]="linksDialog" [modal]="true" [style]="{ width: '820px' }" [maximizable]="true"
+    header="Links de acesso ao questionário" class="p-fluid">
+    <ng-template pTemplate="content">
+        <div class="flex flex-column sm:flex-row sm:justify-content-between sm:align-items-center gap-2 mb-3">
+            <div>
+                <div class="font-semibold" *ngIf="aplicacaoLinks">{{ aplicacaoLinks.nome }}</div>
+                <small class="text-color-secondary">
+                    {{ tokens.length }} token(s) • {{ totalComEmail }} com e-mail
+                </small>
+            </div>
+            <div class="flex gap-2">
+                <button pButton pRipple type="button" icon="pi pi-copy" label="Copiar todos"
+                    class="p-button-outlined" [disabled]="tokens.length === 0" (click)="copiarTodos()"></button>
+                <button pButton pRipple type="button" icon="pi pi-send" label="Enviar por e-mail"
+                    [loading]="enviandoEmails" [disabled]="totalComEmail === 0" (click)="enviarEmails(false)"></button>
+            </div>
+        </div>
+
+        <p class="text-color-secondary mb-3" *ngIf="aplicacaoLinks && (aplicacaoLinks.status || '').toUpperCase() !== 'ATIVO'">
+            <i class="pi pi-info-circle"></i>
+            A aplicação precisa estar <b>Ativa</b> para que os colaboradores consigam responder.
+        </p>
+
+        <p-table [value]="tokens" [loading]="carregandoTokens" [paginator]="tokens.length > 10" [rows]="10"
+            responsiveLayout="scroll" styleClass="p-datatable-sm">
+            <ng-template pTemplate="header">
+                <tr>
+                    <th>Colaborador</th>
+                    <th style="width: 200px">E-mail</th>
+                    <th style="width: 110px" class="text-center">Respondido</th>
+                    <th style="width: 150px" class="text-center">Ações</th>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-t>
+                <tr>
+                    <td>{{ t.colaborador_nome || '—' }}</td>
+                    <td>{{ t.email || '—' }}</td>
+                    <td class="text-center">
+                        <p-tag [value]="t.respondido ? 'Sim' : 'Não'" [severity]="t.respondido ? 'success' : 'secondary'"></p-tag>
+                    </td>
+                    <td class="text-center">
+                        <button pButton pRipple type="button" icon="pi pi-copy"
+                            class="p-button-rounded p-button-text" pTooltip="Copiar link"
+                            (click)="copiar(linkDoToken(t.token))"></button>
+                        <button pButton pRipple type="button" icon="pi pi-qrcode"
+                            class="p-button-rounded p-button-text" pTooltip="Gerar QR code"
+                            (click)="abrirQrCode(t)"></button>
+                    </td>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+                <tr>
+                    <td colspan="4" class="text-center text-color-secondary p-3">Nenhum token nesta aplicação.</td>
+                </tr>
+            </ng-template>
+        </p-table>
+    </ng-template>
+    <ng-template pTemplate="footer">
+        <button pButton pRipple label="Fechar" icon="pi pi-check" class="p-button-text" (click)="linksDialog = false"></button>
+    </ng-template>
+</p-dialog>
+
+<!-- Diálogo: QR code do link -->
+<p-dialog [(visible)]="qrDialog" [modal]="true" [style]="{ width: '360px' }" header="QR code do questionário"
+    [dismissableMask]="true">
+    <div *ngIf="qrToken" class="text-center py-2">
+        <div class="mb-2 font-semibold">{{ qrToken.colaborador_nome || 'Colaborador' }}</div>
+        <img [src]="qrCodeUrl(qrToken.token, 260)" alt="QR code do link do questionário"
+            width="260" height="260" style="border:1px solid var(--surface-border); border-radius:8px;" />
+        <p class="text-color-secondary text-sm mt-2 mb-0" style="word-break: break-all;">
+            {{ linkDoToken(qrToken.token) }}
+        </p>
+    </div>
+    <ng-template pTemplate="footer">
+        <button pButton pRipple type="button" label="Copiar link" icon="pi pi-copy" class="p-button-text"
+            (click)="copiar(linkDoToken(qrToken!.token))" [disabled]="!qrToken"></button>
+        <button pButton pRipple type="button" label="Baixar PNG" icon="pi pi-download"
+            (click)="baixarQrCode()" [disabled]="!qrToken"></button>
     </ng-template>
 </p-dialog>
 

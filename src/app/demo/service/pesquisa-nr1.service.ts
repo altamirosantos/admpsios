@@ -23,11 +23,23 @@ export interface PerguntaPublica {
 /** Situação do token consultado. */
 export type SituacaoToken = 'VALIDO' | 'INVALIDO' | 'RESPONDIDO' | 'INDISPONIVEL';
 
+/** Opção de setor/cargo (lista pré-cadastrada da empresa da aplicação). */
+export interface OpcaoIdentificacao {
+  id: string;
+  nome: string;
+}
+
 export interface QuestionarioPublico {
   situacao: SituacaoToken;
   /** Nome do lote de aplicação (título exibido no cabeçalho). */
   nomeAplicacao: string | null;
   perguntas: PerguntaPublica[];
+  /** Setores da empresa da aplicação (para o colaborador escolher). */
+  setores: OpcaoIdentificacao[];
+  /** Cargos da empresa da aplicação (para o colaborador escolher). */
+  cargos: OpcaoIdentificacao[];
+  /** Link do YouTube do vídeo explicativo (ou null). */
+  videoUrl: string | null;
 }
 
 export interface RespostaItem {
@@ -54,13 +66,13 @@ export class PesquisaNr1Service {
    * ordenadas). Retorna a situação (VALIDO | INVALIDO | RESPONDIDO).
    */
   async carregarPorToken(token: string): Promise<QuestionarioPublico> {
-    const vazio: QuestionarioPublico = { situacao: 'INVALIDO', nomeAplicacao: null, perguntas: [] };
+    const vazio: QuestionarioPublico = { situacao: 'INVALIDO', nomeAplicacao: null, perguntas: [], setores: [], cargos: [], videoUrl: null };
 
     if (!token || !this.isUuid(token)) {
       return vazio;
     }
 
-    // 1) valida o token e obtém o lote da aplicação
+    // 1) valida o token e obtém o lote da aplicação (com a empresa via filial)
     const { data: anonimo, error: anonimoError } = await this.supabaseService.client
       .from('aplicacao_anonimo_nr1')
       .select('id, respondido, aplicacao_nr1:aplicacao_nr1(id, nome, status)')
@@ -82,14 +94,17 @@ export class PesquisaNr1Service {
       : anonimoRow.aplicacao_nr1 ?? null;
 
     if (anonimoRow.respondido) {
-      return { situacao: 'RESPONDIDO', nomeAplicacao: aplicacao?.nome ?? null, perguntas: [] };
+      return { situacao: 'RESPONDIDO', nomeAplicacao: aplicacao?.nome ?? null, perguntas: [], setores: [], cargos: [], videoUrl: null };
     }
 
     // Só é possível responder enquanto a aplicação estiver ATIVA
     // (ainda não liberada / prazo encerrado => indisponível).
     if ((aplicacao?.status ?? '').toUpperCase() !== 'ATIVO') {
-      return { situacao: 'INDISPONIVEL', nomeAplicacao: aplicacao?.nome ?? null, perguntas: [] };
+      return { situacao: 'INDISPONIVEL', nomeAplicacao: aplicacao?.nome ?? null, perguntas: [], setores: [], cargos: [], videoUrl: null };
     }
+
+    // Setores/cargos + vídeo da aplicação (via RPC security definer, sem depender de RLS).
+    const { setores, cargos, videoUrl } = await this.carregarSetoresCargos(token);
 
     // 2) carrega as perguntas e opções ordenadas
     const { data: perguntas, error: perguntasError } = await this.supabaseService.client
@@ -118,7 +133,37 @@ export class PesquisaNr1Service {
     return {
       situacao: 'VALIDO',
       nomeAplicacao: aplicacao?.nome ?? null,
-      perguntas: perguntasMapeadas
+      perguntas: perguntasMapeadas,
+      setores,
+      cargos,
+      videoUrl
+    };
+  }
+
+  /**
+   * Carrega setores e cargos via RPC security definer (a partir do token),
+   * evitando dependência de policies de leitura anônima nas tabelas.
+   */
+  private async carregarSetoresCargos(
+    token: string
+  ): Promise<{ setores: OpcaoIdentificacao[]; cargos: OpcaoIdentificacao[]; videoUrl: string | null }> {
+    const { data, error } = await this.supabaseService.client.rpc('listar_setores_cargos_por_token', {
+      p_token: token
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    const payload = (data ?? {}) as {
+      setores?: OpcaoIdentificacao[];
+      cargos?: OpcaoIdentificacao[];
+      video_url?: string | null;
+    };
+    return {
+      setores: Array.isArray(payload.setores) ? payload.setores : [],
+      cargos: Array.isArray(payload.cargos) ? payload.cargos : [],
+      videoUrl: payload.video_url ?? null
     };
   }
 
@@ -126,10 +171,17 @@ export class PesquisaNr1Service {
    * Submete as respostas via RPC transacional. Lança erro (com mensagem
    * amigável) caso o token já tenha sido respondido ou seja inválido.
    */
-  async submeterRespostas(token: string, respostas: RespostaItem[]): Promise<number> {
+  async submeterRespostas(
+    token: string,
+    respostas: RespostaItem[],
+    setorId: string,
+    cargoId: string | null
+  ): Promise<number> {
     const { data, error } = await this.supabaseService.client.rpc('submeter_resposta_nr1_anonima', {
       p_token: token,
-      p_respostas: respostas
+      p_respostas: respostas,
+      p_setor_id: setorId,
+      p_cargo_id: cargoId
     });
 
     if (error) {

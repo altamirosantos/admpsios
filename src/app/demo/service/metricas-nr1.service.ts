@@ -39,6 +39,19 @@ export interface ResumoMetricasNr1 {
   topicosPendentes: number;
 }
 
+/** Setor com respostas em uma aplicação (para o filtro do dashboard). */
+export interface SetorRespondido {
+  setor_id: string;
+  setor_nome: string;
+  total_respondentes: number;
+}
+
+interface SetorRespondidoRow {
+  setor_id: string;
+  setor_nome: string;
+  total_respondentes: number | string;
+}
+
 /** Linha bruta retornada pela RPC calcular_metricas_nr1. */
 interface MetricaRow {
   fator_risco: string;
@@ -62,9 +75,10 @@ export class MetricasNr1Service {
    * Calcula as métricas do DRPS de uma aplicação (setor), reproduzindo as
    * regras da planilha. Retorna o detalhe por tópico + o resumo geral.
    */
-  async calcularMetricas(aplicacaoId: string): Promise<ResumoMetricasNr1> {
+  async calcularMetricas(aplicacaoId: string, setorId: string | null = null): Promise<ResumoMetricasNr1> {
     const { data, error } = await this.supabaseService.client.rpc('calcular_metricas_nr1', {
-      p_aplicacao_id: aplicacaoId
+      p_aplicacao_id: aplicacaoId,
+      p_setor_id: setorId
     });
 
     if (error) {
@@ -90,16 +104,39 @@ export class MetricasNr1Service {
    * Grava/atualiza a Probabilidade (1..3) de um tópico para a aplicação.
    * Após salvar, o chamador deve recalcular as métricas para refletir a matriz.
    */
-  async salvarProbabilidade(aplicacaoId: string, fatorRisco: string, probabilidade: number): Promise<void> {
+  async salvarProbabilidade(
+    aplicacaoId: string,
+    fatorRisco: string,
+    probabilidade: number,
+    setorId: string | null = null
+  ): Promise<void> {
     const { error } = await this.supabaseService.client.rpc('upsert_probabilidade_nr1', {
       p_aplicacao_id: aplicacaoId,
       p_fator_risco: fatorRisco,
-      p_probabilidade: probabilidade
+      p_probabilidade: probabilidade,
+      p_setor_id: setorId
     });
 
     if (error) {
       throw error;
     }
+  }
+
+  /** Lista os setores que possuem respostas na aplicação (para o filtro). */
+  async listarSetores(aplicacaoId: string): Promise<SetorRespondido[]> {
+    const { data, error } = await this.supabaseService.client.rpc('listar_setores_respondidos_nr1', {
+      p_aplicacao_id: aplicacaoId
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    return (data || []).map((row: SetorRespondidoRow) => ({
+      setor_id: row.setor_id,
+      setor_nome: row.setor_nome,
+      total_respondentes: this.toNumber(row.total_respondentes)
+    }));
   }
 
   /** Monta o resumo geral a partir do detalhe por tópico. */

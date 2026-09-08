@@ -16,8 +16,19 @@
                         [(ngModel)]="aplicacaoSelecionadaId"
                         (onChange)="onAplicacaoChange()"
                         [filter]="true"
-                        [placeholder]="loadingAplicacoes ? 'Carregando...' : 'Selecione a aplicação (setor)'"
-                        styleClass="w-full sm:w-25rem"
+                        [placeholder]="loadingAplicacoes ? 'Carregando...' : 'Selecione a aplicação'"
+                        styleClass="w-full sm:w-22rem"
+                        appendTo="body">
+                    </p-dropdown>
+
+                    <p-dropdown
+                        *ngIf="aplicacaoSelecionadaId"
+                        [options]="setorOptions"
+                        [(ngModel)]="setorSelecionadoId"
+                        (onChange)="onSetorChange()"
+                        [filter]="true"
+                        placeholder="Filtrar por setor"
+                        styleClass="w-full sm:w-18rem"
                         appendTo="body">
                     </p-dropdown>
 
@@ -49,6 +60,7 @@
             <div *ngIf="resumo && !loadingMetricas" class="print-header hidden">
                 <h3 class="m-0">DRPS — Diagnóstico de Riscos Psicossociais</h3>
                 <p class="m-0" *ngIf="aplicacaoSelecionada">{{ aplicacaoLabel(aplicacaoSelecionada) }}</p>
+                <p class="m-0">Setor: {{ setorSelecionadoLabel }}</p>
             </div>
         </div>
     </div>

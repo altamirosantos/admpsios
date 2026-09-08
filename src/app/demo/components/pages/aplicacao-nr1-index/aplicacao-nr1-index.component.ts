@@ -4,7 +4,8 @@ import {
     APLICACAO_STATUS,
     AplicacaoNr1,
     AplicacaoNr1Service,
-    AplicacaoStatus
+    AplicacaoStatus,
+    TokenAplicacaoNr1
 } from 'src/app/demo/service/aplicacao-nr1.service';
 import { Cargo, CargoService } from 'src/app/demo/service/cargo.service';
 import { Empresa, EmpresaService } from 'src/app/demo/service/empresa.service';
@@ -47,10 +48,34 @@ export class AplicacaoNr1IndexComponent implements OnInit {
     setorId: string | null = null;
     cargoId: string | null = null;
     quantidadeColaboradores: number | null = null;
+    /** Link do YouTube (vídeo explicativo exibido antes do questionário). */
+    videoUrl: string | null = null;
+
+    /**
+     * Modo de geração:
+     *  - 'COLABORADORES': 1 token por colaborador cadastrado na filial (permite e-mail).
+     *  - 'QUANTIDADE': N tokens anônimos avulsos (sem vínculo/e-mail).
+     */
+    modoGeracao: 'COLABORADORES' | 'QUANTIDADE' = 'COLABORADORES';
+    readonly modoOptions = [
+        { label: 'Por colaboradores da filial (envia e-mail)', value: 'COLABORADORES' },
+        { label: 'Por quantidade (tokens anônimos avulsos)', value: 'QUANTIDADE' }
+    ];
 
     // Feedback pós-geração
     resultadoDialog = false;
     ultimoResultado: { nome: string; total: number } | null = null;
+
+    // Links / tokens
+    linksDialog = false;
+    carregandoTokens = false;
+    tokens: TokenAplicacaoNr1[] = [];
+    aplicacaoLinks: AplicacaoNr1 | null = null;
+    enviandoEmails = false;
+
+    // QR code
+    qrDialog = false;
+    qrToken: TokenAplicacaoNr1 | null = null;
 
     // Edição de status
     statusDialog = false;
@@ -165,6 +190,8 @@ export class AplicacaoNr1IndexComponent implements OnInit {
         this.setorId = null;
         this.cargoId = null;
         this.quantidadeColaboradores = null;
+        this.videoUrl = null;
+        this.modoGeracao = 'COLABORADORES';
         this.filialOptions = [];
         this.setorOptions = [];
         this.cargoOptions = [];
@@ -180,31 +207,57 @@ export class AplicacaoNr1IndexComponent implements OnInit {
     async gerarAplicacao(): Promise<void> {
         this.submitted = true;
 
-        if (!this.nome?.trim() || !this.filialId || !this.quantidadeColaboradores || this.quantidadeColaboradores < 1) {
+        // Validação comum + específica por modo.
+        if (!this.nome?.trim() || !this.filialId) {
+            return;
+        }
+        if (this.modoGeracao === 'QUANTIDADE' && (!this.quantidadeColaboradores || this.quantidadeColaboradores < 1)) {
             return;
         }
 
         this.salvando = true;
 
         try {
-            const resultado = await this.aplicacaoService.gerarAplicacaoComTokens({
-                nome: this.nome.trim(),
-                filial_id: this.filialId,
-                quantidade_colaboradores: this.quantidadeColaboradores,
-                setor_id: this.setorId,
-                cargo_id: this.cargoId
-            });
+            let nomeResultado: string;
+            let total: number;
+
+            const videoUrl = this.videoUrl?.trim() || null;
+
+            if (this.modoGeracao === 'COLABORADORES') {
+                const r = await this.aplicacaoService.gerarAplicacaoPorColaboradores(this.nome.trim(), this.filialId, 'GERADO', videoUrl);
+                nomeResultado = r.nome;
+                total = r.total_tokens;
+                const semEmail = r.total_sem_email
+                    ? ` (${r.total_sem_email} sem e-mail cadastrado)`
+                    : '';
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Aplicação gerada',
+                    detail: `${total} token(s) por colaborador${semEmail}.`,
+                    life: 4000
+                });
+            } else {
+                const r = await this.aplicacaoService.gerarAplicacaoComTokens({
+                    nome: this.nome.trim(),
+                    filial_id: this.filialId,
+                    quantidade_colaboradores: this.quantidadeColaboradores!,
+                    setor_id: this.setorId,
+                    cargo_id: this.cargoId,
+                    video_url: videoUrl
+                });
+                nomeResultado = r.nome;
+                total = r.total_tokens;
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Aplicação gerada',
+                    detail: `${total} token(s) de acesso criados.`,
+                    life: 4000
+                });
+            }
 
             this.aplicacaoDialog = false;
-            this.ultimoResultado = { nome: resultado.nome, total: resultado.total_tokens };
+            this.ultimoResultado = { nome: nomeResultado, total };
             this.resultadoDialog = true;
-
-            this.messageService.add({
-                severity: 'success',
-                summary: 'Aplicação gerada',
-                detail: `${resultado.total_tokens} token(s) de acesso criados.`,
-                life: 4000
-            });
 
             await this.loadAplicacoes();
         } catch (error) {
@@ -248,6 +301,113 @@ export class AplicacaoNr1IndexComponent implements OnInit {
             CANCELADO: 'danger'
         };
         return map[status] || 'secondary';
+    }
+
+    // --- Links / tokens ---
+
+    /** Base pública usada para montar os links (origem atual do app). */
+    get baseUrl(): string {
+        return window.location.origin;
+    }
+
+    linkDoToken(token: string): string {
+        return `${this.baseUrl}/pesquisa/nr1/${token}`;
+    }
+
+    /** URL de imagem PNG do QR code do link (via serviço público, sem dependências). */
+    qrCodeUrl(token: string, tamanho = 220): string {
+        const link = encodeURIComponent(this.linkDoToken(token));
+        return `https://api.qrserver.com/v1/create-qr-code/?size=${tamanho}x${tamanho}&margin=8&data=${link}`;
+    }
+
+    /** Abre o QR ampliado de um token. */
+    abrirQrCode(t: TokenAplicacaoNr1): void {
+        this.qrToken = t;
+        this.qrDialog = true;
+    }
+
+    /** Baixa o PNG do QR code atual. */
+    baixarQrCode(): void {
+        if (!this.qrToken) {
+            return;
+        }
+        const nome = (this.qrToken.colaborador_nome || 'colaborador').replace(/[^\w\-]+/g, '_');
+        const a = document.createElement('a');
+        a.href = this.qrCodeUrl(this.qrToken.token, 600);
+        a.download = `qrcode-nr1-${nome}.png`;
+        a.target = '_blank';
+        a.rel = 'noopener';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+
+    async abrirLinks(aplicacao: AplicacaoNr1): Promise<void> {
+        if (!aplicacao.id) {
+            return;
+        }
+
+        this.aplicacaoLinks = aplicacao;
+        this.tokens = [];
+        this.linksDialog = true;
+        this.carregandoTokens = true;
+
+        try {
+            this.tokens = await this.aplicacaoService.listarTokens(aplicacao.id);
+        } catch (error) {
+            console.error('Erro ao carregar tokens:', error);
+            this.messageService.add({ severity: 'error', summary: 'Erro', detail: 'Não foi possível carregar os links.', life: 3000 });
+        } finally {
+            this.carregandoTokens = false;
+        }
+    }
+
+    async copiar(texto: string): Promise<void> {
+        try {
+            await navigator.clipboard.writeText(texto);
+            this.messageService.add({ severity: 'success', summary: 'Copiado', detail: 'Link copiado para a área de transferência.', life: 2000 });
+        } catch {
+            this.messageService.add({ severity: 'warn', summary: 'Atenção', detail: 'Não foi possível copiar automaticamente.', life: 3000 });
+        }
+    }
+
+    async copiarTodos(): Promise<void> {
+        const linhas = this.tokens.map((t) => {
+            const quem = t.colaborador_nome || t.email || 'colaborador';
+            return `${quem}: ${this.linkDoToken(t.token)}`;
+        });
+        await this.copiar(linhas.join('\n'));
+    }
+
+    async enviarEmails(reenviar = false): Promise<void> {
+        if (!this.aplicacaoLinks?.id) {
+            return;
+        }
+
+        this.enviandoEmails = true;
+
+        try {
+            const r = await this.aplicacaoService.enviarLinksPorEmail(this.aplicacaoLinks.id, this.baseUrl, reenviar);
+            const detalhe = `${r.enviados} e-mail(s) enviado(s).` +
+                (r.semEmail ? ` ${r.semEmail} sem e-mail.` : '') +
+                (r.falhas?.length ? ` ${r.falhas.length} falha(s).` : '');
+            this.messageService.add({
+                severity: r.falhas?.length ? 'warn' : 'success',
+                summary: 'Envio concluído',
+                detail: detalhe,
+                life: 5000
+            });
+        } catch (error) {
+            console.error('Erro ao enviar e-mails:', error);
+            const detail = error instanceof Error ? error.message : 'Não foi possível enviar os e-mails.';
+            this.messageService.add({ severity: 'error', summary: 'Erro', detail, life: 5000 });
+        } finally {
+            this.enviandoEmails = false;
+        }
+    }
+
+    get totalComEmail(): number {
+        return this.tokens.filter((t) => !!t.email).length;
     }
 
     // --- Edição de status ---

@@ -119,3 +119,75 @@
     .spinner { animation-duration: 0s; }
     .pulse, .pergunta-area, .progresso-preenchimento { animation: none; transition: none; }
 }
+
+/* --- Etapa de identificação (setor/cargo) --- */
+.identificacao {
+    /* Player do vídeo explicativo (responsivo 16:9). */
+    .video-explicativo {
+        width: 100%;
+        max-width: 560px;
+        margin: 1.25rem 0 0.5rem;
+        aspect-ratio: 16 / 9;
+        border-radius: 12px;
+        overflow: hidden;
+        background: #000;
+        box-shadow: 0 2px 12px rgba(31, 36, 48, 0.12);
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: 0;
+            display: block;
+        }
+    }
+
+    .identificacao-form {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        width: 100%;
+        max-width: 420px;
+        margin: 1.5rem 0;
+        text-align: left;
+    }
+
+    .campo {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+    }
+
+    .campo-label {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #334155;
+    }
+
+    .campo-select {
+        width: 100%;
+        padding: 0.75rem 0.9rem;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        font-size: 1rem;
+        background: #fff;
+        color: #0f172a;
+        appearance: auto;
+
+        &:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+    }
+
+    /* O botão "Começar" está numa coluna flex (.estado-central); sem isto o
+       flex:1 herdado de .btn faz o botão esticar em altura. Fixamos o tamanho. */
+    .btn {
+        flex: 0 0 auto;
+        align-self: center;
+        width: 100%;
+        max-width: 420px;
+        min-height: 52px;
+        padding: 0 24px;
+    }
+}

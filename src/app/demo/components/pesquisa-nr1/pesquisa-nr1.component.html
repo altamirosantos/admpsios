@@ -70,6 +70,51 @@
         </p>
     </div>
 
+    <!-- IDENTIFICAÇÃO (setor obrigatório / cargo opcional) -->
+    <div *ngIf="tela === 'IDENTIFICACAO'" class="estado-central estado-mensagem identificacao">
+        <div class="icone-circulo icone-info" aria-hidden="true">
+            <i class="pi pi-user"></i>
+        </div>
+        <h1 class="estado-titulo">{{ nomeAplicacao || 'Pesquisa Psicossocial — NR-1' }}</h1>
+        <p class="estado-descricao">
+            Antes de começar, selecione o seu <strong>setor</strong> e o seu <strong>cargo</strong>.
+            Isso é usado apenas para agrupar os resultados — suas respostas continuam anônimas.
+        </p>
+
+        <!-- Vídeo explicativo (opcional) -->
+        <div *ngIf="videoEmbedUrl" class="video-explicativo">
+            <iframe [src]="videoEmbedUrl" title="Vídeo explicativo" frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowfullscreen></iframe>
+        </div>
+
+        <div class="identificacao-form">
+            <label class="campo">
+                <span class="campo-label">Setor <span class="obrigatoria">*</span></span>
+                <select class="campo-select" [(ngModel)]="setorId" aria-label="Setor">
+                    <option [ngValue]="null" disabled selected>Selecione o seu setor</option>
+                    <option *ngFor="let s of setores" [ngValue]="s.id">{{ s.nome }}</option>
+                </select>
+            </label>
+
+            <label class="campo">
+                <span class="campo-label">Cargo</span>
+                <select class="campo-select" [(ngModel)]="cargoId" aria-label="Cargo">
+                    <option [ngValue]="null" selected>Não informar / não listado</option>
+                    <option *ngFor="let c of cargos" [ngValue]="c.id">{{ c.nome }}</option>
+                </select>
+            </label>
+        </div>
+
+        <button type="button" class="btn btn-primario" (click)="iniciarQuestionario()" [disabled]="!podeIniciar">
+            Começar <i class="pi pi-arrow-right" aria-hidden="true"></i>
+        </button>
+
+        <p *ngIf="setores.length === 0" class="aviso-pendente" role="status">
+            Nenhum setor cadastrado para esta empresa. Procure o responsável pela pesquisa.
+        </p>
+    </div>
+
     <!-- QUESTIONÁRIO -->
     <ng-container *ngIf="tela === 'QUESTIONARIO' && perguntaAtual as pergunta">
         <!-- Cabeçalho fixo -->

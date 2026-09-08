@@ -25,6 +25,7 @@ export interface AplicacaoNr1 {
   cargo_id: string | null;
   nome: string;
   status: string;
+  video_url?: string | null;
   filial?: AplicacaoNr1FilialSummary | null;
   setor?: AplicacaoNr1RefSummary | null;
   cargo?: AplicacaoNr1RefSummary | null;
@@ -44,6 +45,8 @@ export interface GerarAplicacaoParams {
   setor_id?: string | null;
   cargo_id?: string | null;
   status?: string;
+  /** Link do YouTube exibido ao colaborador antes do questionário. */
+  video_url?: string | null;
 }
 
 /** Resultado retornado pela RPC gerar_aplicacao_com_tokens. */
@@ -52,6 +55,24 @@ export interface GerarAplicacaoResultado {
   nome: string;
   status: string;
   total_tokens: number;
+}
+
+/** Token de acesso de um colaborador dentro de uma aplicação. */
+export interface TokenAplicacaoNr1 {
+  id: string;
+  token: string;
+  respondido: boolean;
+  email: string | null;
+  colaborador_id: string | null;
+  colaborador_nome: string | null;
+}
+
+/** Resultado do disparo de e-mails pela Edge Function. */
+export interface EnvioLinksResultado {
+  enviados: number;
+  totalDestinatarios: number;
+  semEmail: number;
+  falhas: { email: string; erro: string }[];
 }
 
 type RawEmpresa = { id: string; nome: string };
@@ -83,6 +104,7 @@ export class AplicacaoNr1Service {
     cargo_id,
     nome,
     status,
+    video_url,
     created_at,
     updated_at,
     filial:filial(id, nome_fantasia, razao_social, empresa:empresa(id, nome)),
@@ -104,7 +126,8 @@ export class AplicacaoNr1Service {
       p_quantidade_colaboradores: params.quantidade_colaboradores,
       p_setor_id: params.setor_id ?? null,
       p_cargo_id: params.cargo_id ?? null,
-      p_status: params.status ?? 'GERADO'
+      p_status: params.status ?? 'GERADO',
+      p_video_url: params.video_url ?? null
     });
 
     if (error) {
@@ -120,6 +143,71 @@ export class AplicacaoNr1Service {
       status: row?.status,
       total_tokens: Number(row?.total_tokens ?? 0)
     };
+  }
+
+  /**
+   * Cria o lote e gera 1 token por colaborador cadastrado na filial, com
+   * vínculo temporário (nome/e-mail) para o disparo. Setor/cargo são
+   * informados depois pelo próprio colaborador no questionário.
+   */
+  async gerarAplicacaoPorColaboradores(
+    nome: string,
+    filialId: string,
+    status: string = 'GERADO',
+    videoUrl: string | null = null
+  ): Promise<{ aplicacao_id: string; nome: string; status: string; total_tokens: number; total_sem_email: number }> {
+    const { data, error } = await this.supabaseService.client.rpc('gerar_aplicacao_por_colaboradores', {
+      p_nome: nome,
+      p_filial_id: filialId,
+      p_status: status,
+      p_video_url: videoUrl
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    const row = Array.isArray(data) ? data[0] : data;
+    return {
+      aplicacao_id: row?.aplicacao_id,
+      nome: row?.nome,
+      status: row?.status,
+      total_tokens: Number(row?.total_tokens ?? 0),
+      total_sem_email: Number(row?.total_sem_email ?? 0)
+    };
+  }
+
+  /** Lista os tokens (links) de uma aplicação, com o vínculo temporário. */
+  async listarTokens(aplicacaoId: string): Promise<TokenAplicacaoNr1[]> {
+    const { data, error } = await this.supabaseService.client.rpc('listar_tokens_aplicacao_nr1', {
+      p_aplicacao_id: aplicacaoId
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    return (data || []) as TokenAplicacaoNr1[];
+  }
+
+  /**
+   * Dispara os links por e-mail (Edge Function 'enviar-links-nr1').
+   * base_url é a origem pública do app (ex.: https://admin.suaempresa.com).
+   */
+  async enviarLinksPorEmail(
+    aplicacaoId: string,
+    baseUrl: string,
+    reenviar = false
+  ): Promise<EnvioLinksResultado> {
+    const { data, error } = await this.supabaseService.client.functions.invoke('enviar-links-nr1', {
+      body: { aplicacao_id: aplicacaoId, base_url: baseUrl, reenviar }
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    return data as EnvioLinksResultado;
   }
 
   /** Atualiza apenas o status do lote (GERADO/ATIVO/ENCERRADO/CANCELADO). */
@@ -178,6 +266,7 @@ export class AplicacaoNr1Service {
       cargo_id: item.cargo_id,
       nome: item.nome,
       status: item.status,
+      video_url: item.video_url ?? null,
       created_at: item.created_at,
       updated_at: item.updated_at,
       filial,
