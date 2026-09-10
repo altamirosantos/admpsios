@@ -1,0 +1,97 @@
+- Generating browser application bundles (phase: setup)...
+√ Browser application bundle generation complete.
+√ Browser application bundle generation complete.
+- Copying assets...
+√ Copying assets complete.
+- Generating index html...
+√ Index html generation complete.
+
+Initial Chunk Files           | Names                                                    |   Raw Size | Estimated Transfer Size
+main.bd43efb26908cdf6.js      | main                                                     |  631.51 kB |               157.76 kB
+styles.07c3242341be9e10.css   | styles                                                   |  367.24 kB |                22.93 kB
+polyfills.766643b61e9809d8.js | polyfills                                                |   32.96 kB |                10.64 kB
+runtime.55c103d49abcec62.js   | runtime                                                  |    4.34 kB |                 2.09 kB
+
+| Initial Total                                            |    1.01 MB |               193.42 kB
+
+Lazy Chunk Files              | Names                                                    |   Raw Size | Estimated Transfer Size
+687.a353a97c236df957.js       | modelo-proposta-index-modelo-proposta-index-module       |  571.85 kB |               164.69 kB
+9252.4f61c18797026bec.js      | demo-components-dashboard-dashboard-module               |  194.47 kB |                57.95 kB
+8628.3194aeb5c67ffa9d.js      | list-listdemo-module                                     |  154.92 kB |                30.29 kB
+9552.c1cc2a343e9540b7.js      | demo-components-dashboard-dashboard-module               |  142.05 kB |                27.27 kB
+5952.d061f0f4b968d89b.js      | menus-menus-module                                       |  138.35 kB |                19.14 kB
+1192.9c334339ad56e300.js      | tree-treedemo-module                                     |  125.90 kB |                23.53 kB
+6645.9340c787a2ae820d.js      | demo-components-dashboard-dashboard-module               |  113.39 kB |                24.03 kB
+8549.b2f676f7317e48f6.js      | media-mediademo-module                                   |  102.50 kB |                19.77 kB
+6443.8103cf5a58d9f346.js      | floatlabel-floatlabeldemo-module                         |   83.50 kB |                16.71 kB
+5821.2de1ffe0003952b8.js      | demo-components-dashboard-dashboard-module               |   81.93 kB |                16.75 kB
+639.a20697e3b91e51f8.js       | input-inputdemo-module                                   |   74.27 kB |                16.08 kB
+2811.bd6f7df60dc538ee.js      | panels-panelsdemo-module                                 |   61.76 kB |                12.80 kB
+4055.2a0f4d3084547168.js      | floatlabel-floatlabeldemo-module                         |   51.19 kB |                10.75 kB
+common.ef9dbc106ef956d2.js    | common                                                   |   51.01 kB |                10.55 kB
+5800.3b6d1ef465c9620e.js      | overlays-overlaysdemo-module                             |   50.65 kB |                10.19 kB
+6068.2be20f39c949ac5a.js      | demo-components-primeblocks-primeblocks-module           |   49.60 kB |                 9.01 kB
+5381.68b9a7fd646a2a58.js      | misc-miscdemo-module                                     |   38.43 kB |                 9.38 kB
+4801.e51c40a491261c69.js      | demo-components-dashboard-dashboard-module               |   36.44 kB |                 7.28 kB
+3602.4124699dc20c411c.js      | proposta-empresa-index-proposta-empresa-index-module     |   33.48 kB |                 8.27 kB
+3722.1231a34afab2b13d.js      | file-filedemo-module                                     |   31.70 kB |                 7.87 kB
+1331.be20e638b1ad8523.js      | button-buttondemo-module                                 |   31.16 kB |                 7.39 kB
+3530.aaaed21acfe72a21.js      | overlays-overlaysdemo-module                             |   30.47 kB |                 7.61 kB
+4759.97022a4952a6a938.js      | aplicacao-nr1-index-aplicacao-nr1-index-module           |   28.63 kB |                 6.89 kB
+7416.f36d9133ea0f0a8e.js      | jogo-interativo-index-jogo-interativo-index-module       |   26.89 kB |                 6.15 kB
+8031.d3d0f8910d58bdfa.js      | demo-components-pesquisa-nr1-pesquisa-nr1-module         |   26.82 kB |                 6.94 kB
+3124.75297228f4a10c4c.js      | contrato-empresa-index-contrato-empresa-index-module     |   26.78 kB |                 6.95 kB
+9814.2a53b4607893c83c.js      | pergunta-nr1-index-pergunta-nr1-index-module             |   24.03 kB |                 6.25 kB
+1512.e412c6cc99ee93a3.js      | edicao-index-edicao-index-module                         |   23.33 kB |                 5.77 kB
+597.11f78acfd9153373.js       | nr1-dashboard-index-nr1-dashboard-index-module           |   22.58 kB |                 5.73 kB
+2151.6eeb9a1be23dfdb2.js      | table-tabledemo-module                                   |   22.26 kB |                 5.84 kB
+4104.e226c371991e1bc7.js      | messages-messagesdemo-module                             |   20.97 kB |                 5.60 kB
+1122.292076eca65cd04e.js      | demo-components-dashboard-dashboard-module               |   20.33 kB |                 4.99 kB
+5373.59b3fca4b2c880b5.js      | demo-components-landing-landing-module                   |   20.09 kB |                 4.40 kB
+2947.5ee7329b736b976c.js      | demo-components-dashboard-dashboard-module               |   19.97 kB |                 4.89 kB
+5186.e9d0bef56d0997aa.js      | input-inputdemo-module                                   |   19.49 kB |                 4.47 kB
+8903.13c81738ee9e92cf.js      | resources-index-resources-index-module                   |   19.13 kB |                 4.93 kB
+7853.acc4bc57dded5c83.js      | demo-components-primeblocks-primeblocks-module           |   19.03 kB |                 5.80 kB
+5832.758963ac2c276665.js      | crud-crud-module                                         |   18.13 kB |                 4.58 kB
+2961.f2c41fdda83841b2.js      | colaborador-index-colaborador-index-module               |   17.24 kB |                 4.34 kB
+2752.691478644750af2d.js      | button-buttondemo-module                                 |   16.45 kB |                 3.35 kB
+5915.d1db421d9572a467.js      | n8n-chat-histories-index-n8n-chat-histories-index-module |   15.32 kB |                 4.41 kB
+6022.71be3c89ebe920aa.js      | input-inputdemo-module                                   |   15.09 kB |                 4.30 kB
+1822.555c64fee3f089d4.js      | termometro-index-termometro-index-module                 |   14.90 kB |                 3.55 kB
+5614.fd9ececa9a3bfb87.js      | pergunta-index-pergunta-index-module                     |   14.82 kB |                 3.60 kB
+6026.9892b189314cab8c.js      | filial-index-filial-index-module                         |   14.43 kB |                 3.96 kB
+8336.a929ab6446739e79.js      | demo-components-landing-landing-module                   |   13.53 kB |                 3.77 kB
+3693.e86e7b137ba23374.js      | timeline-timelinedemo-module                             |   13.27 kB |                 3.17 kB
+2582.bed4d0fe036fa89f.js      | demo-components-dashboard-dashboard-module               |   12.34 kB |                 3.30 kB
+9663.5d0af43b5bda9006.js      | floatlabel-floatlabeldemo-module                         |   12.32 kB |                 3.69 kB
+3259.d99213069f93a132.js      | demo-components-dashboard-dashboard-module               |   12.17 kB |                 2.67 kB
+4996.0e9e907acdf6029a.js      | servicos-proposta-index-servicos-proposta-index-module   |   12.09 kB |                 3.50 kB
+3832.8977f55c52a74613.js      | file-filedemo-module                                     |   11.64 kB |                 3.40 kB
+1636.b3efb8c50a90aee2.js      | setor-index-setor-index-module                           |   11.38 kB |                 3.26 kB
+5568.4695bb9b22189104.js      | cargo-index-cargo-index-module                           |   11.37 kB |                 3.26 kB
+1321.d7dd29d5a64977a9.js      | categories-index-categories-index-module                 |   10.67 kB |                 3.03 kB
+9768.938edb9e66303028.js      | empresa-index-empresa-index-module                       |   10.66 kB |                 3.11 kB
+9502.e566d8855afc39b8.js      | file-filedemo-module                                     |   10.59 kB |                 3.36 kB
+1753.87c9abbef90f0b44.js      | autoavaliacoes-index-autoavaliacoes-index-module         |    9.68 kB |                 3.07 kB
+7294.c385a3f8aac442b9.js      | messages-messagesdemo-module                             |    8.76 kB |                 2.62 kB
+6942.80fca93efe0767bb.js      | demo-components-documentation-documentation-module       |    7.62 kB |                 2.43 kB
+7590.4872f5456ede6016.js      | charts-chartsdemo-module                                 |    7.23 kB |                 2.10 kB
+7471.1f283e31ff15c290.js      | floatlabel-floatlabeldemo-module                         |    5.83 kB |                 1.62 kB
+8099.c563e2d95aa13aaf.js      | login-login-module                                       |    5.45 kB |                 2.16 kB
+6426.8f9b15697d1e59e2.js      | demo-components-pages-pages-module                       |    5.29 kB |               868 bytes
+6824.f195ef3148b14b48.js      | formlayout-formlayoutdemo-module                         |    5.09 kB |                 1.43 kB
+3280.2379d39291bd64d7.js      | invalid-invalidstatedemo-module                          |    4.95 kB |                 1.45 kB
+3794.19d23c0f2b2fbdb2.js      | demo-components-utilities-utilities-module               |    3.82 kB |                 1.40 kB
+7493.a342bd6ee76645ee.js      | demo-components-uikit-uikit-module                       |    3.36 kB |               775 bytes
+6324.cbca47b04bb0faed.js      | access-access-module                                     |    2.23 kB |               946 bytes
+5938.2a88b14b3ae2d4b0.js      | error-error-module                                       |    2.19 kB |               942 bytes
+1732.f7f2955eda59d456.js      | empty-emptydemo-module                                   | 1011 bytes |               446 bytes
+2043.7164ebf642c67e7d.js      | demo-components-auth-auth-module                         |  866 bytes |               383 bytes
+
+Build at: 2026-09-10T15:42:42.866Z - Hash: cb438ed64a76ea22 - Time: 106636ms
+
+Warning: c:/desenvolvimento/Angular/adminpsios/src/app/demo/components/pesquisa-nr1/pesquisa-nr1.component.scss exceeded maximum budget. Budget 6.00 kB was not met by 1.05 kB with a total of 7.05 kB.
+
+Warning: bundle initial exceeded maximum budget. Budget 1.00 MB was not met by 12.05 kB with a total of 1.01 MB.
+
+

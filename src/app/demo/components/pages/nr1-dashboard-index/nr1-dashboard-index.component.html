@@ -72,7 +72,7 @@
                 <span class="block text-500 font-medium mb-2">Gravidade Geral</span>
                 <div class="flex align-items-center gap-2">
                     <span class="text-900 font-medium text-3xl">{{ resumo.gravidadeGeral | number:'1.2-2' }}</span>
-                    <p-tag [value]="resumo.gravidadeGeralClasse" [severity]="nivelSeverity(resumo.gravidadeGeralClasse)"></p-tag>
+                    <p-tag [value]="resumo.gravidadeGeralClasse" [styleClass]="'nr1-tag ' + nivelTagClass(resumo.gravidadeGeralClasse)"></p-tag>
                 </div>
                 <span class="text-500 text-sm">Média (0 a 3) da gravidade dos tópicos</span>
             </div>
@@ -91,6 +91,35 @@
                     <p-tag *ngIf="resumo.topicosPendentes > 0" value="Pendente" severity="secondary"></p-tag>
                 </div>
                 <span class="text-500 text-sm">Informe a probabilidade para fechar a matriz de risco</span>
+            </div>
+        </div>
+
+        <!-- Painel resumo: 3 pizzas (Matriz de Risco, Gravidade por Setor, Gravidade Geral) -->
+        <div class="col-12 md:col-4">
+            <div class="card mb-0 h-full">
+                <h5 class="text-center">Matriz de Risco <span class="text-color-secondary text-sm">({{ setorSelecionadoLabel }})</span></h5>
+                <div style="min-height: 260px;">
+                    <p-chart *ngIf="pieRiscoData" type="pie" [data]="pieRiscoData" [options]="pieOptions" height="260px"></p-chart>
+                </div>
+                <small class="text-color-secondary block text-center mt-2">Distribuição do risco final dos tópicos.</small>
+            </div>
+        </div>
+        <div class="col-12 md:col-4">
+            <div class="card mb-0 h-full">
+                <h5 class="text-center">Gravidade por Setor <span class="text-color-secondary text-sm">({{ setorSelecionadoLabel }})</span></h5>
+                <div style="min-height: 260px;">
+                    <p-chart *ngIf="pieGravidadeSetorData" type="pie" [data]="pieGravidadeSetorData" [options]="pieOptions" height="260px"></p-chart>
+                </div>
+                <small class="text-color-secondary block text-center mt-2">Distribuição da gravidade dos tópicos do setor.</small>
+            </div>
+        </div>
+        <div class="col-12 md:col-4">
+            <div class="card mb-0 h-full">
+                <h5 class="text-center">Gravidade Geral</h5>
+                <div style="min-height: 260px;">
+                    <p-chart *ngIf="pieGravidadeGeralData" type="pie" [data]="pieGravidadeGeralData" [options]="pieOptions" height="260px"></p-chart>
+                </div>
+                <small class="text-color-secondary block text-center mt-2">Distribuição da gravidade entre todos os setores.</small>
             </div>
         </div>
 
@@ -116,26 +145,31 @@
                             <td class="text-center">{{ topico.total_respostas }}</td>
                             <td class="text-center">{{ topico.gravidade_media | number:'1.2-2' }}</td>
                             <td class="text-center">
-                                <p-tag [value]="topico.gravidade_classe" [severity]="nivelSeverity(topico.gravidade_classe)"></p-tag>
+                                <p-tag [value]="topico.gravidade_classe" [styleClass]="'nr1-tag ' + nivelTagClass(topico.gravidade_classe)"></p-tag>
                             </td>
                             <!-- Edição de probabilidade (não vai para o PDF) -->
                             <td class="text-center no-print">
-                                <p-dropdown
-                                    [options]="probabilidadeOptions"
-                                    [ngModel]="probabilidadeValor(topico)"
-                                    (onChange)="onProbabilidadeChange(topico, $event.value)"
-                                    [disabled]="salvandoProbabilidade === topico.fator_risco"
-                                    placeholder="Definir"
-                                    styleClass="w-9rem"
-                                    appendTo="body">
-                                </p-dropdown>
+                                <div class="flex align-items-center justify-content-center gap-2">
+                                    <p-dropdown
+                                        [options]="probabilidadeOptions"
+                                        [ngModel]="probabilidadeValor(topico)"
+                                        (onChange)="onProbabilidadeChange(topico, $event.value)"
+                                        [disabled]="salvandoProbabilidade === topico.fator_risco"
+                                        placeholder="Definir"
+                                        styleClass="w-9rem"
+                                        appendTo="body">
+                                    </p-dropdown>
+                                    <p-tag *ngIf="topico.probabilidade_classe"
+                                        [value]="topico.probabilidade_classe"
+                                        [styleClass]="'nr1-tag ' + nivelTagClass(topico.probabilidade_classe)"></p-tag>
+                                </div>
                             </td>
                             <!-- Versão estática para impressão -->
                             <td class="text-center print-only hidden">
                                 {{ topico.probabilidade_classe || '—' }}
                             </td>
                             <td class="text-center">
-                                <p-tag [value]="topico.risco_classe" [severity]="riscoSeverity(topico.risco_classe)"></p-tag>
+                                <p-tag [value]="topico.risco_classe" [styleClass]="'nr1-tag ' + riscoTagClass(topico.risco_classe)"></p-tag>
                             </td>
                         </tr>
                     </ng-template>
@@ -155,10 +189,51 @@
             </div>
         </div>
 
+        <!-- Comparativo entre setores (consolidado para o PGR) -->
+        <div class="col-12" *ngIf="comparativoSetores.length">
+            <div class="card">
+                <h5>Comparativo entre Setores</h5>
+                <span class="text-color-secondary block mb-3">
+                    Visão consolidada de todos os setores desta aplicação (independe do filtro acima).
+                </span>
+
+                <div style="min-height: 360px;" class="mb-4">
+                    <p-chart type="bar" [data]="chartSetoresData" [options]="chartSetoresOptions" height="360px"></p-chart>
+                </div>
+
+                <p-table [value]="comparativoSetores" responsiveLayout="scroll" styleClass="p-datatable-sm">
+                    <ng-template pTemplate="header">
+                        <tr>
+                            <th>Setor</th>
+                            <th class="text-center">Respondentes</th>
+                            <th class="text-center">Gravidade (média)</th>
+                            <th class="text-center">Gravidade</th>
+                            <th class="text-center">Probabilidade (média)</th>
+                            <th class="text-center">Risco Final</th>
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="body" let-s>
+                        <tr>
+                            <td>{{ s.setor_nome }}</td>
+                            <td class="text-center">{{ s.total_respondentes }}</td>
+                            <td class="text-center">{{ s.gravidade_media | number:'1.2-2' }}</td>
+                            <td class="text-center">
+                                <p-tag [value]="s.gravidade_classe" [styleClass]="'nr1-tag ' + nivelTagClass(s.gravidade_classe)"></p-tag>
+                            </td>
+                            <td class="text-center">{{ s.probabilidade_media != null ? (s.probabilidade_media | number:'1.2-2') : '—' }}</td>
+                            <td class="text-center">
+                                <p-tag [value]="s.risco_classe" [styleClass]="'nr1-tag ' + riscoTagClass(s.risco_classe)"></p-tag>
+                            </td>
+                        </tr>
+                    </ng-template>
+                </p-table>
+            </div>
+        </div>
+
         <!-- Gráfico: gravidade por tópico -->
         <div class="col-12">
             <div class="card">
-                <h5>Gravidade por Tópico</h5>
+                <h5>Gravidade por Tópico <span class="text-color-secondary text-sm">({{ setorSelecionadoLabel }})</span></h5>
                 <div style="min-height: 420px;">
                     <p-chart type="bar" [data]="chartData" [options]="chartOptions" height="420px"></p-chart>
                 </div>

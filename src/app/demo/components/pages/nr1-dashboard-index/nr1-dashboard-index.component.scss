@@ -35,3 +35,17 @@
         page-break-inside: avoid;
     }
 }
+
+/* Cores fixas das tags por classificação (verde/amarelo/vermelho/preto).
+   Usa ::ng-deep para alcançar o elemento interno do p-tag do PrimeNG. */
+:host ::ng-deep {
+    .nr1-tag {
+        color: #ffffff !important;
+        font-weight: 600;
+    }
+    .nr1-tag.tag-baixo   { background-color: #22c55e !important; } /* verde   */
+    .nr1-tag.tag-medio   { background-color: #eab308 !important; color: #1f2937 !important; } /* amarelo */
+    .nr1-tag.tag-alto    { background-color: #ef4444 !important; } /* vermelho */
+    .nr1-tag.tag-critico { background-color: #111827 !important; } /* preto   */
+    .nr1-tag.tag-pendente{ background-color: #9ca3af !important; } /* cinza   */
+}

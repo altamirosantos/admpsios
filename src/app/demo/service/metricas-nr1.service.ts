@@ -52,6 +52,29 @@ interface SetorRespondidoRow {
   total_respondentes: number | string;
 }
 
+/** Linha do comparativo entre setores (para o gráfico/quadro do dashboard). */
+export interface ComparativoSetor {
+  setor_id: string;
+  setor_nome: string;
+  total_respondentes: number;
+  gravidade_media: number;
+  gravidade_classe: ClasseNivel;
+  gravidade_num: number;
+  probabilidade_media: number | null;
+  risco_classe: RiscoClasse;
+}
+
+interface ComparativoSetorRow {
+  setor_id: string;
+  setor_nome: string;
+  total_respondentes: number | string;
+  gravidade_media: number | string | null;
+  gravidade_classe: ClasseNivel;
+  gravidade_num: number | string;
+  probabilidade_media: number | string | null;
+  risco_classe: RiscoClasse;
+}
+
 /** Linha bruta retornada pela RPC calcular_metricas_nr1. */
 interface MetricaRow {
   fator_risco: string;
@@ -136,6 +159,28 @@ export class MetricasNr1Service {
       setor_id: row.setor_id,
       setor_nome: row.setor_nome,
       total_respondentes: this.toNumber(row.total_respondentes)
+    }));
+  }
+
+  /** Comparativo de gravidade/risco entre os setores da aplicação (visão consolidada). */
+  async comparativoPorSetor(aplicacaoId: string): Promise<ComparativoSetor[]> {
+    const { data, error } = await this.supabaseService.client.rpc('comparativo_setores_nr1', {
+      p_aplicacao_id: aplicacaoId
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    return (data || []).map((row: ComparativoSetorRow) => ({
+      setor_id: row.setor_id,
+      setor_nome: row.setor_nome,
+      total_respondentes: this.toNumber(row.total_respondentes),
+      gravidade_media: this.toNumber(row.gravidade_media),
+      gravidade_classe: row.gravidade_classe,
+      gravidade_num: this.toNumber(row.gravidade_num),
+      probabilidade_media: row.probabilidade_media == null ? null : this.toNumber(row.probabilidade_media),
+      risco_classe: row.risco_classe
     }));
   }
 

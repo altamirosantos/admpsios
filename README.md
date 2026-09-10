@@ -1,4 +1,15 @@
-# Sakai
+# adminpsios (Sakai-ng)
+
+Painel administrativo do ecossistema PSIOS (Angular 17 + PrimeNG + Supabase).
+
+## 📚 Documentação do projeto (leia antes de contribuir / gerar código)
+
+- **[`.copilot-instructions.md`](./.copilot-instructions.md)** — guia geral do projeto, stack, convenções obrigatórias e regras para IA.
+- **[`docs/MODULO-NR1.md`](./docs/MODULO-NR1.md)** — módulo NR-1 / DRPS (cálculo psicossocial, tabelas, RPCs, telas, Edge Function, conformidade legal).
+
+Backend/DB e Edge Functions ficam no projeto irmão `../../React/supabase-schema` (Prisma schema + scripts SQL).
+
+---
 
 This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 13.0.4.
 
