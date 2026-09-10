@@ -22,6 +22,39 @@ const COR_ALTO = '#ef4444';    // vermelho
 const COR_CRITICO = '#111827'; // preto
 const COR_PENDENTE = '#9ca3af'; // cinza
 
+/**
+ * Fontes geradoras do risco — textos FIXOS por fator de risco (fonte: planilha /
+ * fontes-geradoras.csv). A chave é o nome do tópico SEM o prefixo "Tópico NN - ".
+ */
+const FONTES_GERADORAS: Record<string, string> = {
+    'Assédio de qualquer natureza no trabalho':
+        'Cultura permissiva a desrespeito; ausência de canal de denúncia; liderança despreparada; comunicação violenta.',
+    'Falta de suporte/apoio no trabalho':
+        'Liderança ausente; falta de escuta; cobrança sem acompanhamento; RH pouco atuante.',
+    'Má gestão de mudanças organizacionais':
+        'Comunicação inadequada; mudanças abruptas; falta de planejamento; insegurança quanto à estabilidade.',
+    'Baixa clareza de papel/função':
+        'Falta de definição de responsabilidades; ordens contraditórias; comunicação confusa; atribuições mal definidas.',
+    'Baixas recompensas e reconhecimento':
+        'Ausência de feedback; foco exclusivo em metas; reconhecimento desigual; falta de plano de crescimento.',
+    'Baixo controle no trabalho / Falta de autonomia':
+        'Microgestão; excesso de burocracia; centralização de decisões; baixa confiança na equipe.',
+    'Baixa justiça organizacional':
+        'Critérios pouco transparentes; favorecimento; desigualdade de tratamento; decisões pouco claras.',
+    'Eventos violentos ou traumáticos':
+        'Falta de protocolos de segurança; exposição a risco; ausência de treinamento; falta de suporte pós-evento.',
+    'Baixa demanda no trabalho (Subcarga)':
+        'Subutilização de competências; ociosidade; má distribuição de tarefas; funções pouco desafiadoras.',
+    'Excesso de demandas no trabalho (Sobrecarga)':
+        'Metas irrealistas; equipe insuficiente; jornadas prolongadas; acúmulo de funções.',
+    'Maus relacionamentos no local de trabalho':
+        'Comunicação agressiva; rivalidade interna; conflitos mal geridos; liderança despreparada.',
+    'Trabalho em condições de difícil comunicação':
+        'Turnos desalinhados; distância física; falha nos meios de comunicação; fluxo de informação inadequado.',
+    'Trabalho remoto e isolado':
+        'Isolamento social; falta de acompanhamento; comunicação exclusivamente digital; baixa integração da equipe.'
+};
+
 /** Opções de probabilidade (avaliação qualitativa do psicólogo). */
 const PROBABILIDADE_OPTIONS: SelectOption[] = [
     { label: '1 - Baixa', value: '1' },
@@ -222,6 +255,19 @@ export class Nr1DashboardIndexComponent implements OnInit {
         } finally {
             this.salvandoProbabilidade = null;
         }
+    }
+
+    /**
+     * Retorna a fonte geradora (texto fixo) do fator de risco. Casa pelo nome do
+     * tópico, removendo o prefixo "Tópico NN - " quando presente.
+     */
+    fonteGeradora(fatorRisco: string): string {
+        if (!fatorRisco) {
+            return '';
+        }
+        // Match direto ou removendo o prefixo "Tópico NN - ".
+        const semPrefixo = fatorRisco.replace(/^T[óo]pico\s*\d+\s*-\s*/i, '').trim();
+        return FONTES_GERADORAS[fatorRisco] ?? FONTES_GERADORAS[semPrefixo] ?? '';
     }
 
     /** Gera o PDF/impressão do quadro atual (o psicólogo salva por setor). */

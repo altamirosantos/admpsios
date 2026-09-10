@@ -119,7 +119,7 @@
                 <div style="min-height: 260px;">
                     <p-chart *ngIf="pieGravidadeGeralData" type="pie" [data]="pieGravidadeGeralData" [options]="pieOptions" height="260px"></p-chart>
                 </div>
-                <small class="text-color-secondary block text-center mt-2">Distribuição da gravidade entre todos os setores.</small>
+                <small class="text-color-secondary block text-center mt-2">Distribuição da gravidade da empresa como um todo.</small>
             </div>
         </div>
 
@@ -131,6 +131,7 @@
                     <ng-template pTemplate="header">
                         <tr>
                             <th>Fator de Risco (Tópico)</th>
+                            <th style="min-width: 18rem">Fontes Geradoras do Risco</th>
                             <th class="text-center">Respostas</th>
                             <th class="text-center">Gravidade (média)</th>
                             <th class="text-center">Gravidade</th>
@@ -142,6 +143,7 @@
                     <ng-template pTemplate="body" let-topico>
                         <tr>
                             <td>{{ topico.fator_risco }}</td>
+                            <td class="text-sm text-color-secondary">{{ fonteGeradora(topico.fator_risco) || '—' }}</td>
                             <td class="text-center">{{ topico.total_respostas }}</td>
                             <td class="text-center">{{ topico.gravidade_media | number:'1.2-2' }}</td>
                             <td class="text-center">
@@ -175,7 +177,7 @@
                     </ng-template>
                     <ng-template pTemplate="emptymessage">
                         <tr>
-                            <td colspan="7" class="text-center text-color-secondary p-4">
+                            <td colspan="8" class="text-center text-color-secondary p-4">
                                 Nenhuma resposta registrada para esta aplicação ainda.
                             </td>
                         </tr>
