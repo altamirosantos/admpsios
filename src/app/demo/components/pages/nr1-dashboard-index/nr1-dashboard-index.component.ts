@@ -9,10 +9,18 @@ import {
     RiscoClasse,
     SetorRespondido
 } from 'src/app/demo/service/metricas-nr1.service';
+import { SupabaseService } from 'src/app/demo/service/supabase.service';
 
 interface SelectOption {
     label: string;
     value: string;
+}
+
+/** Resultado retornado pela edge function n8n-laudonr1. */
+interface LaudoNr1Resultado {
+    laudo_tecnico: string;
+    plano_de_acao: Record<string, any>[];
+    conclusao: string;
 }
 
 /** Paleta fixa por classificação (verde/amarelo/vermelho/preto). */
@@ -105,12 +113,21 @@ export class Nr1DashboardIndexComponent implements OnInit {
     pieGravidadeSetorData: any;
     pieGravidadeGeralData: any;
 
+    /** Texto livre do elaborador — campo "Contexto" do card "Análise do Elaborador". */
+    contextoAnalise: string = '';
+
+    /** Estado e resultado da geração do laudo por IA. */
+    gerandoLaudo = false;
+    laudoResultado: LaudoNr1Resultado | null = null;
+    planoDeAcaoColunas: string[] = [];
+
     private aplicacoes: AplicacaoNr1[] = [];
 
     constructor(
         private readonly messageService: MessageService,
         private readonly aplicacaoService: AplicacaoNr1Service,
-        private readonly metricasService: MetricasNr1Service
+        private readonly metricasService: MetricasNr1Service,
+        private readonly supabaseService: SupabaseService
     ) {}
 
     ngOnInit(): void {
@@ -273,6 +290,64 @@ export class Nr1DashboardIndexComponent implements OnInit {
     /** Gera o PDF/impressão do quadro atual (o psicólogo salva por setor). */
     exportarPdf(): void {
         window.print();
+    }
+
+    /** Chama a edge function n8n-laudonr1 para gerar o laudo técnico via IA. */
+    async gerarLaudoIA(): Promise<void> {
+        if (!this.resumo) {
+            return;
+        }
+
+        this.gerandoLaudo = true;
+        this.laudoResultado = null;
+        this.planoDeAcaoColunas = [];
+
+        try {
+            const topicos = this.resumo.topicos.map((t, i) => ({
+                topico_id: String(i + 1).padStart(2, '0'),
+                topico_nome: t.fator_risco,
+                media_gravidade: t.gravidade_media
+            }));
+
+            const payload = {
+                setor: this.setorSelecionadoLabel,
+                topicos,
+                contexto: this.contextoAnalise || 'Analise conforme resultados dos topicos.'
+            };
+
+            const { data, error } = await this.supabaseService.client.functions.invoke('n8n-laudonr1', {
+                body: payload
+            });
+
+            if (error) {
+                throw error;
+            }
+
+            const resultado = (typeof data === 'string' ? JSON.parse(data) : data) as LaudoNr1Resultado;
+            this.laudoResultado = resultado;
+
+            // Extrair colunas dinamicamente do primeiro item do plano_de_acao
+            if (resultado.plano_de_acao?.length > 0) {
+                this.planoDeAcaoColunas = Object.keys(resultado.plano_de_acao[0]);
+            }
+
+            this.messageService.add({
+                severity: 'success',
+                summary: 'Laudo gerado',
+                detail: 'O laudo técnico foi gerado com sucesso pela IA.',
+                life: 4000
+            });
+        } catch (error) {
+            console.error('Erro ao gerar laudo por IA:', error);
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Erro',
+                detail: 'Não foi possível gerar o laudo. Tente novamente.',
+                life: 5000
+            });
+        } finally {
+            this.gerandoLaudo = false;
+        }
     }
 
     // --- Helpers de exibição ---
