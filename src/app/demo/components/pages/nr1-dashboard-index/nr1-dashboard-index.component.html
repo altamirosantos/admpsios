@@ -130,14 +130,14 @@
                 <p-table [value]="resumo.topicos" responsiveLayout="scroll" styleClass="p-datatable-sm">
                     <ng-template pTemplate="header">
                         <tr>
-                            <th>Fator de Risco (Tópico)</th>
-                            <th style="min-width: 18rem">Fontes Geradoras do Risco</th>
-                            <th class="text-center">Respostas</th>
-                            <th class="text-center">Gravidade (média)</th>
-                            <th class="text-center">Gravidade</th>
-                            <th class="text-center no-print">Probabilidade</th>
-                            <th class="text-center print-only hidden">Probabilidade</th>
-                            <th class="text-center">Risco Final</th>
+                            <th id="topico-col-fator" scope="col">Fator de Risco (Tópico)</th>
+                            <th id="topico-col-fontes" scope="col" style="min-width: 18rem">Fontes Geradoras do Risco</th>
+                            <th id="topico-col-respostas" scope="col" class="text-center">Respostas</th>
+                            <th id="topico-col-gravidade-media" scope="col" class="text-center">Gravidade (média)</th>
+                            <th id="topico-col-gravidade" scope="col" class="text-center">Gravidade</th>
+                            <th id="topico-col-probabilidade-edicao" scope="col" class="text-center no-print">Probabilidade</th>
+                            <th id="topico-col-probabilidade-print" scope="col" class="text-center print-only hidden">Probabilidade</th>
+                            <th id="topico-col-risco" scope="col" class="text-center">Risco Final</th>
                         </tr>
                     </ng-template>
                     <ng-template pTemplate="body" let-topico>
@@ -206,12 +206,12 @@
                 <p-table [value]="comparativoSetores" responsiveLayout="scroll" styleClass="p-datatable-sm">
                     <ng-template pTemplate="header">
                         <tr>
-                            <th>Setor</th>
-                            <th class="text-center">Respondentes</th>
-                            <th class="text-center">Gravidade (média)</th>
-                            <th class="text-center">Gravidade</th>
-                            <th class="text-center">Probabilidade (média)</th>
-                            <th class="text-center">Risco Final</th>
+                            <th id="setor-col-nome" scope="col">Setor</th>
+                            <th id="setor-col-respondentes" scope="col" class="text-center">Respondentes</th>
+                            <th id="setor-col-gravidade-media" scope="col" class="text-center">Gravidade (média)</th>
+                            <th id="setor-col-gravidade" scope="col" class="text-center">Gravidade</th>
+                            <th id="setor-col-probabilidade-media" scope="col" class="text-center">Probabilidade (média)</th>
+                            <th id="setor-col-risco" scope="col" class="text-center">Risco Final</th>
                         </tr>
                     </ng-template>
                     <ng-template pTemplate="body" let-s>
@@ -254,8 +254,12 @@
                         [(ngModel)]="contextoAnalise"
                         rows="6"
                         class="w-full"
-                        placeholder="Descreva o contexto da análise do elaborador...">
+                        [disabled]="!podeEditarAnaliseSetor"
+                        [placeholder]="podeEditarAnaliseSetor ? 'Descreva o contexto da análise do elaborador...' : 'Selecione a aplicação e um setor específico para habilitar a análise.'">
                     </textarea>
+                    <small class="text-color-secondary block mt-2" *ngIf="!podeEditarAnaliseSetor">
+                        A análise e o laudo por IA são salvos por setor. Selecione uma aplicação e um setor específico no filtro acima.
+                    </small>
                 </div>
                 <div class="flex justify-content-end mt-3">
                     <button
@@ -265,7 +269,7 @@
                         label="Gerar Laudo por IA"
                         class="p-button-success"
                         [loading]="gerandoLaudo"
-                        [disabled]="!resumo || gerandoLaudo"
+                        [disabled]="!podeGerarLaudoIA || gerandoLaudo"
                         (click)="gerarLaudoIA()">
                     </button>
                 </div>
@@ -277,15 +281,29 @@
             <div class="card">
                 <div class="flex justify-content-between align-items-center mb-4">
                     <h5 class="m-0">Laudo Gerado por IA</h5>
-                    <p-tag value="Gerado por IA" icon="pi pi-bolt" severity="success"></p-tag>
+                    <div class="flex align-items-center gap-2">
+                        <button
+                            pButton
+                            type="button"
+                            icon="pi pi-save"
+                            label="Salvar dados"
+                            class="p-button-outlined"
+                            [loading]="salvandoDadosRelatorio"
+                            [disabled]="!podeEditarAnaliseSetor || salvandoDadosRelatorio"
+                            (click)="salvarDadosRelatorioEditados()">
+                        </button>
+                        <p-tag value="Gerado por IA" icon="pi pi-bolt" severity="success"></p-tag>
+                    </div>
                 </div>
 
                 <!-- Laudo Técnico -->
                 <div class="field">
-                    <label class="block text-500 font-medium mb-2">Laudo Técnico</label>
+                    <div class="block text-500 font-medium mb-2">Laudo Técnico</div>
                     <textarea
+                        id="laudo-tecnico"
                         pInputTextarea
                         [(ngModel)]="laudoResultado.laudo_tecnico"
+                        aria-label="Laudo Técnico"
                         rows="10"
                         class="w-full">
                     </textarea>
@@ -293,16 +311,26 @@
 
                 <!-- Plano de Ação -->
                 <div class="field mt-4">
-                    <label class="block text-500 font-medium mb-2">Plano de Ação</label>
+                    <div class="block text-500 font-medium mb-2">Plano de Ação</div>
                     <p-table [value]="laudoResultado.plano_de_acao" responsiveLayout="scroll" styleClass="p-datatable-sm">
                         <ng-template pTemplate="header">
                             <tr>
-                                <th *ngFor="let col of planoDeAcaoColunas">{{ col }}</th>
+                                <th *ngFor="let col of planoDeAcaoColunas" scope="col" [attr.id]="'plano-col-' + col">{{ col }}</th>
                             </tr>
                         </ng-template>
-                        <ng-template pTemplate="body" let-item>
+                        <ng-template pTemplate="body" let-item let-rowIndex="rowIndex">
                             <tr>
-                                <td *ngFor="let col of planoDeAcaoColunas">{{ item[col] }}</td>
+                                <td *ngFor="let col of planoDeAcaoColunas">
+                                    <input
+                                        pInputText
+                                        type="text"
+                                        class="w-full"
+                                        [id]="'plano-acao-' + rowIndex + '-' + col"
+                                        [attr.aria-labelledby]="'plano-col-' + col"
+                                        [attr.aria-label]="col"
+                                        [ngModel]="item[col]"
+                                        (ngModelChange)="atualizarPlanoAcaoCampo(item, col, $event)">
+                                </td>
                             </tr>
                         </ng-template>
                         <ng-template pTemplate="emptymessage">
@@ -317,10 +345,12 @@
 
                 <!-- Conclusão -->
                 <div class="field mt-4">
-                    <label class="block text-500 font-medium mb-2">Conclusão</label>
+                    <div class="block text-500 font-medium mb-2">Conclusão</div>
                     <textarea
+                        id="laudo-conclusao"
                         pInputTextarea
                         [(ngModel)]="laudoResultado.conclusao"
+                        aria-label="Conclusão"
                         rows="6"
                         class="w-full">
                     </textarea>

@@ -23,6 +23,19 @@ interface LaudoNr1Resultado {
     conclusao: string;
 }
 
+interface LaudoNr1RegistroSetor {
+    setor_id: string;
+    setor_label: string;
+    contexto: string;
+    resultado: LaudoNr1Resultado;
+    updated_at: string;
+}
+
+interface AplicacaoDadosRelatorio {
+    setores: Record<string, LaudoNr1RegistroSetor>;
+    [key: string]: unknown;
+}
+
 /** Paleta fixa por classificação (verde/amarelo/vermelho/preto). */
 const COR_BAIXO = '#22c55e';   // verde
 const COR_MEDIO = '#eab308';   // amarelo
@@ -118,6 +131,7 @@ export class Nr1DashboardIndexComponent implements OnInit {
 
     /** Estado e resultado da geração do laudo por IA. */
     gerandoLaudo = false;
+    salvandoDadosRelatorio = false;
     laudoResultado: LaudoNr1Resultado | null = null;
     planoDeAcaoColunas: string[] = [];
 
@@ -158,6 +172,7 @@ export class Nr1DashboardIndexComponent implements OnInit {
         this.setorOptions = [];
         this.comparativoSetores = [];
         this.chartSetoresData = null;
+        this.limparDadosRelatorioTela();
         this.aplicacaoSelecionada = this.aplicacoes.find((a) => a.id === this.aplicacaoSelecionadaId) ?? null;
 
         if (!this.aplicacaoSelecionadaId) {
@@ -203,6 +218,7 @@ export class Nr1DashboardIndexComponent implements OnInit {
 
     /** Muda o setor filtrado e recalcula (mantém a aplicação). */
     async onSetorChange(): Promise<void> {
+        this.sincronizarDadosRelatorioDoSetor();
         await this.carregarMetricas();
     }
 
@@ -294,7 +310,7 @@ export class Nr1DashboardIndexComponent implements OnInit {
 
     /** Chama a edge function n8n-laudonr1 para gerar o laudo técnico via IA. */
     async gerarLaudoIA(): Promise<void> {
-        if (!this.resumo) {
+        if (!this.podeGerarLaudoIA || !this.resumo) {
             return;
         }
 
@@ -306,7 +322,7 @@ export class Nr1DashboardIndexComponent implements OnInit {
             const topicos = this.resumo.topicos.map((t, i) => ({
                 topico_id: String(i + 1).padStart(2, '0'),
                 topico_nome: t.fator_risco,
-                media_gravidade: t.gravidade_media
+                risco_final: t.risco_classe
             }));
 
             const payload = {
@@ -325,16 +341,13 @@ export class Nr1DashboardIndexComponent implements OnInit {
 
             const resultado = (typeof data === 'string' ? JSON.parse(data) : data) as LaudoNr1Resultado;
             this.laudoResultado = resultado;
-
-            // Extrair colunas dinamicamente do primeiro item do plano_de_acao
-            if (resultado.plano_de_acao?.length > 0) {
-                this.planoDeAcaoColunas = Object.keys(resultado.plano_de_acao[0]);
-            }
+            this.atualizarColunasPlanoDeAcao();
+            await this.persistirDadosRelatorio();
 
             this.messageService.add({
                 severity: 'success',
                 summary: 'Laudo gerado',
-                detail: 'O laudo técnico foi gerado com sucesso pela IA.',
+                detail: 'O laudo técnico foi gerado e salvo com sucesso para o setor selecionado.',
                 life: 4000
             });
         } catch (error) {
@@ -350,7 +363,50 @@ export class Nr1DashboardIndexComponent implements OnInit {
         }
     }
 
+    async salvarDadosRelatorioEditados(): Promise<void> {
+        if (!this.podeEditarAnaliseSetor || !this.laudoResultado) {
+            return;
+        }
+
+        this.salvandoDadosRelatorio = true;
+
+        try {
+            await this.persistirDadosRelatorio();
+            this.messageService.add({
+                severity: 'success',
+                summary: 'Dados salvos',
+                detail: 'As alterações do laudo foram salvas com sucesso.',
+                life: 4000
+            });
+        } catch (error) {
+            console.error('Erro ao salvar dados do laudo:', error);
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Erro',
+                detail: 'Não foi possível salvar as alterações do laudo.',
+                life: 5000
+            });
+        } finally {
+            this.salvandoDadosRelatorio = false;
+        }
+    }
+
+    atualizarPlanoAcaoCampo(item: Record<string, any>, coluna: string, valor: any): void {
+        item[coluna] = valor;
+    }
+
     // --- Helpers de exibição ---
+
+    get podeEditarAnaliseSetor(): boolean {
+        return !!this.aplicacaoSelecionadaId && !!this.setorSelecionadoId;
+    }
+
+    get podeGerarLaudoIA(): boolean {
+        return this.podeEditarAnaliseSetor
+            && !!this.resumo
+            && this.resumo.topicos.length > 0
+            && this.resumo.topicos.every((topico) => topico.risco_classe !== 'Pendente');
+    }
 
     /** Rótulo do setor filtrado (para o cabeçalho de impressão). */
     get setorSelecionadoLabel(): string {
@@ -398,6 +454,94 @@ export class Nr1DashboardIndexComponent implements OnInit {
             Alta: 'tag-alto'
         };
         return (classe && map[classe]) || 'tag-pendente';
+    }
+
+    private sincronizarDadosRelatorioDoSetor(): void {
+        if (!this.podeEditarAnaliseSetor) {
+            this.limparDadosRelatorioTela();
+            return;
+        }
+
+        const registro = this.obterRegistroDadosRelatorioSetor();
+        if (!registro) {
+            this.limparDadosRelatorioTela();
+            return;
+        }
+
+        this.contextoAnalise = registro.contexto || '';
+        this.laudoResultado = this.clonarLaudo(registro.resultado);
+        this.atualizarColunasPlanoDeAcao();
+    }
+
+    private async persistirDadosRelatorio(): Promise<void> {
+        if (!this.aplicacaoSelecionadaId || !this.setorSelecionadoId || !this.laudoResultado) {
+            return;
+        }
+
+        const dadosRelatorio = this.normalizarDadosRelatorio(this.aplicacaoSelecionada?.dados_relatorio);
+        dadosRelatorio.setores[this.setorSelecionadoId] = {
+            setor_id: this.setorSelecionadoId,
+            setor_label: this.setorSelecionadoLabel,
+            contexto: this.contextoAnalise || '',
+            resultado: this.clonarLaudo(this.laudoResultado),
+            updated_at: new Date().toISOString()
+        };
+
+        await this.aplicacaoService.atualizarDadosRelatorio(this.aplicacaoSelecionadaId, dadosRelatorio);
+        this.atualizarAplicacaoLocal(dadosRelatorio);
+    }
+
+    private atualizarAplicacaoLocal(dadosRelatorio: AplicacaoDadosRelatorio): void {
+        if (!this.aplicacaoSelecionadaId) {
+            return;
+        }
+
+        this.aplicacoes = this.aplicacoes.map((aplicacao) =>
+            aplicacao.id === this.aplicacaoSelecionadaId ? { ...aplicacao, dados_relatorio: dadosRelatorio } : aplicacao
+        );
+        this.aplicacaoSelecionada = this.aplicacoes.find((aplicacao) => aplicacao.id === this.aplicacaoSelecionadaId) ?? this.aplicacaoSelecionada;
+    }
+
+    private obterRegistroDadosRelatorioSetor(): LaudoNr1RegistroSetor | null {
+        if (!this.setorSelecionadoId) {
+            return null;
+        }
+
+        const dadosRelatorio = this.normalizarDadosRelatorio(this.aplicacaoSelecionada?.dados_relatorio);
+        const registro = dadosRelatorio.setores[this.setorSelecionadoId];
+        return registro?.resultado ? registro : null;
+    }
+
+    private normalizarDadosRelatorio(dados: unknown): AplicacaoDadosRelatorio {
+        if (!dados || typeof dados !== 'object' || Array.isArray(dados)) {
+            return { setores: {} };
+        }
+
+        const dadosObjeto = dados as Record<string, unknown>;
+        const setores = dadosObjeto['setores'];
+
+        return {
+            ...dadosObjeto,
+            setores: setores && typeof setores === 'object' && !Array.isArray(setores)
+                ? { ...(setores as Record<string, LaudoNr1RegistroSetor>) }
+                : {}
+        };
+    }
+
+    private limparDadosRelatorioTela(): void {
+        this.contextoAnalise = '';
+        this.laudoResultado = null;
+        this.planoDeAcaoColunas = [];
+    }
+
+    private atualizarColunasPlanoDeAcao(): void {
+        this.planoDeAcaoColunas = this.laudoResultado?.plano_de_acao?.length
+            ? Object.keys(this.laudoResultado.plano_de_acao[0])
+            : [];
+    }
+
+    private clonarLaudo(resultado: LaudoNr1Resultado): LaudoNr1Resultado {
+        return JSON.parse(JSON.stringify(resultado)) as LaudoNr1Resultado;
     }
 
     private initChartOptions(): void {

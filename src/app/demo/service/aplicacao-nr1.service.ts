@@ -25,6 +25,7 @@ export interface AplicacaoNr1 {
   cargo_id: string | null;
   nome: string;
   status: string;
+  dados_relatorio?: unknown | null;
   video_url?: string | null;
   filial?: AplicacaoNr1FilialSummary | null;
   setor?: AplicacaoNr1RefSummary | null;
@@ -104,6 +105,7 @@ export class AplicacaoNr1Service {
     cargo_id,
     nome,
     status,
+    dados_relatorio,
     video_url,
     created_at,
     updated_at,
@@ -222,6 +224,17 @@ export class AplicacaoNr1Service {
     }
   }
 
+  async atualizarDadosRelatorio(id: string, dadosRelatorio: unknown): Promise<void> {
+    const { error } = await this.supabaseService.client
+      .from(this.table)
+      .update({ dados_relatorio: dadosRelatorio, updated_at: new Date().toISOString() })
+      .eq('id', id);
+
+    if (error) {
+      throw error;
+    }
+  }
+
   async getAll(): Promise<AplicacaoNr1[]> {
     const { data, error } = await this.supabaseService.client
       .from(this.table)
@@ -266,6 +279,7 @@ export class AplicacaoNr1Service {
       cargo_id: item.cargo_id,
       nome: item.nome,
       status: item.status,
+      dados_relatorio: item.dados_relatorio ?? null,
       video_url: item.video_url ?? null,
       created_at: item.created_at,
       updated_at: item.updated_at,
