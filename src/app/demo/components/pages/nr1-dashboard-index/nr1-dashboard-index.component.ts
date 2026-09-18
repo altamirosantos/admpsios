@@ -83,6 +83,16 @@ const PROBABILIDADE_OPTIONS: SelectOption[] = [
     { label: '3 - Alta', value: '3' }
 ];
 
+/** Mapeamento de labels legíveis para os nomes de colunas do plano de ação. */
+const PLANO_DE_ACAO_LABELS: Record<string, string> = {
+    'fator_de_risco_identificado': 'Fator de Risco (Tópico)',
+    'classificacao_final': 'Classificação Final',
+    'descricao_sintetica_do_problema': 'Descrição Sintética do Problema',
+    'medida_preventiva_recomendada': 'Medida Preventiva Recomendada',
+    'responsavel': 'Responsável',
+    'prazo': 'Prazo'
+};
+
 @Component({
     selector: 'app-nr1-dashboard-index',
     templateUrl: './nr1-dashboard-index.component.html',
@@ -395,6 +405,28 @@ export class Nr1DashboardIndexComponent implements OnInit {
         item[coluna] = valor;
     }
 
+    adicionarPlanoAcao(): void {
+        if (!this.laudoResultado || !this.laudoResultado.plano_de_acao) {
+            return;
+        }
+
+        // Cria um novo item com todas as colunas vazias
+        const novoItem: Record<string, any> = {};
+        this.planoDeAcaoColunas.forEach(col => {
+            novoItem[col] = '';
+        });
+
+        this.laudoResultado.plano_de_acao.push(novoItem);
+    }
+
+    removerPlanoAcao(index: number): void {
+        if (!this.laudoResultado || !this.laudoResultado.plano_de_acao) {
+            return;
+        }
+
+        this.laudoResultado.plano_de_acao.splice(index, 1);
+    }
+
     // --- Helpers de exibição ---
 
     get podeEditarAnaliseSetor(): boolean {
@@ -535,9 +567,36 @@ export class Nr1DashboardIndexComponent implements OnInit {
     }
 
     private atualizarColunasPlanoDeAcao(): void {
-        this.planoDeAcaoColunas = this.laudoResultado?.plano_de_acao?.length
-            ? Object.keys(this.laudoResultado.plano_de_acao[0])
-            : [];
+        if (!this.laudoResultado?.plano_de_acao?.length) {
+            this.planoDeAcaoColunas = [];
+            return;
+        }
+
+        // Ordem esperada dos campos no plano de ação (respeita a ordem do JSON)
+        const colunasPredefinidas = [
+            'fator_de_risco_identificado',
+            'classificacao_final',
+            'descricao_sintetica_do_problema',
+            'medida_preventiva_recomendada',
+            'responsavel',
+            'prazo'
+        ];
+
+        // Obtém todas as colunas do primeiro item
+        const colunasDosDados = Object.keys(this.laudoResultado.plano_de_acao[0]);
+
+        // Ordena: primeiro as colunas predefinidas (na ordem esperada), depois qualquer coluna adicional
+        const colunasOrdenadas = [
+            ...colunasPredefinidas.filter(col => colunasDosDados.includes(col)),
+            ...colunasDosDados.filter(col => !colunasPredefinidas.includes(col))
+        ];
+
+        this.planoDeAcaoColunas = colunasOrdenadas;
+    }
+
+    /** Retorna o label legível para um nome de coluna do plano de ação. */
+    obterLabelColuna(nomeDaColuna: string): string {
+        return PLANO_DE_ACAO_LABELS[nomeDaColuna] || nomeDaColuna;
     }
 
     private clonarLaudo(resultado: LaudoNr1Resultado): LaudoNr1Resultado {

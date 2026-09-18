@@ -6,9 +6,9 @@ export type ModeloStatus = 'ATIVO' | 'INATIVO';
 export const MODELO_STATUS: ModeloStatus[] = ['ATIVO', 'INATIVO'];
 
 /** Tipo do modelo: documento de PROPOSTA ou de CONTRATO. */
-export type ModeloTipo = 'PROPOSTA' | 'CONTRATO';
+export type ModeloTipo = 'PROPOSTA' | 'CONTRATO' | 'RELATORIO';
 
-export const MODELO_TIPO: ModeloTipo[] = ['PROPOSTA', 'CONTRATO'];
+export const MODELO_TIPO: ModeloTipo[] = ['PROPOSTA', 'CONTRATO', 'RELATORIO'];
 
 export type ParametroTipo = 'texto' | 'numero' | 'data' | 'moeda' | 'booleano';
 

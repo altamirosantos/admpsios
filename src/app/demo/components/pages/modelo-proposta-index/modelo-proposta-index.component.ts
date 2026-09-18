@@ -418,7 +418,8 @@ export class ModeloPropostaIndexComponent implements OnInit, AfterViewInit, OnDe
     tipoModeloLabel(tipo: ModeloTipo): string {
         const labels: Record<ModeloTipo, string> = {
             PROPOSTA: 'Proposta',
-            CONTRATO: 'Contrato'
+            CONTRATO: 'Contrato',
+            RELATORIO: 'Relatorio'
         };
         return labels[tipo] || tipo;
     }

@@ -311,11 +311,23 @@
 
                 <!-- Plano de Ação -->
                 <div class="field mt-4">
-                    <div class="block text-500 font-medium mb-2">Plano de Ação</div>
+                    <div class="flex justify-content-between align-items-center mb-3">
+                        <div class="block text-500 font-medium">Plano de Ação</div>
+                        <button
+                            pButton
+                            type="button"
+                            icon="pi pi-plus"
+                            label="Adicionar ação"
+                            class="p-button-sm"
+                            [disabled]="!podeEditarAnaliseSetor"
+                            (click)="adicionarPlanoAcao()">
+                        </button>
+                    </div>
                     <p-table [value]="laudoResultado.plano_de_acao" responsiveLayout="scroll" styleClass="p-datatable-sm">
                         <ng-template pTemplate="header">
                             <tr>
-                                <th *ngFor="let col of planoDeAcaoColunas" scope="col" [attr.id]="'plano-col-' + col">{{ col }}</th>
+                                <th *ngFor="let col of planoDeAcaoColunas" scope="col" [attr.id]="'plano-col-' + col">{{ obterLabelColuna(col) }}</th>
+                                <th scope="col" id="plano-col-acoes" style="width: 60px; text-align: center;">Ações</th>
                             </tr>
                         </ng-template>
                         <ng-template pTemplate="body" let-item let-rowIndex="rowIndex">
@@ -331,11 +343,22 @@
                                         [ngModel]="item[col]"
                                         (ngModelChange)="atualizarPlanoAcaoCampo(item, col, $event)">
                                 </td>
+                                <td style="text-align: center;">
+                                    <button
+                                        pButton
+                                        pRipple
+                                        icon="pi pi-trash"
+                                        class="p-button-rounded p-button-danger p-button-sm"
+                                        [disabled]="!podeEditarAnaliseSetor"
+                                        (click)="removerPlanoAcao(rowIndex)"
+                                        pTooltip="Remover ação">
+                                    </button>
+                                </td>
                             </tr>
                         </ng-template>
                         <ng-template pTemplate="emptymessage">
                             <tr>
-                                <td [attr.colspan]="planoDeAcaoColunas.length" class="text-center text-color-secondary p-4">
+                                <td [attr.colspan]="planoDeAcaoColunas.length + 1" class="text-center text-color-secondary p-4">
                                     Nenhuma ação retornada.
                                 </td>
                             </tr>

@@ -36,7 +36,7 @@ export class AppMenuComponent implements OnInit {
                     { label: 'Perguntas NR-1', icon: 'pi pi-fw pi-question-circle', routerLink: ['/pages/perguntas-nr1'] },
                     { label: 'Aplicações NR-1', icon: 'pi pi-fw pi-bolt', routerLink: ['/pages/aplicacoes-nr1'] },
                     { label: 'Dashboard NR-1 (DRPS)', icon: 'pi pi-fw pi-chart-pie', routerLink: ['/pages/dashboard-nr1'] },
-                    { label: 'Modelos (Proposta/Contrato)', icon: 'pi pi-fw pi-file', routerLink: ['/pages/modelos-proposta'] },
+                    { label: 'Modelos', icon: 'pi pi-fw pi-file', routerLink: ['/pages/modelos-proposta'] },
                     { label: 'Serviços de Proposta', icon: 'pi pi-fw pi-briefcase', routerLink: ['/pages/servicos-proposta'] },
                     { label: 'Propostas', icon: 'pi pi-fw pi-send', routerLink: ['/pages/propostas'] },
                     { label: 'Contratos', icon: 'pi pi-fw pi-file-edit', routerLink: ['/pages/contratos'] },
