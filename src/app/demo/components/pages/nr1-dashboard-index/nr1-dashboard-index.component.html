@@ -285,6 +285,16 @@
                         <button
                             pButton
                             type="button"
+                            icon="pi pi-file-pdf"
+                            label="Gerar relatório DRPS"
+                            class="p-button-info"
+                            [loading]="gerandoRelatorio"
+                            [disabled]="!podeEditarAnaliseSetor || gerandoRelatorio"
+                            (click)="abrirModalGerarRelatorio()">
+                        </button>
+                        <button
+                            pButton
+                            type="button"
                             icon="pi pi-save"
                             label="Salvar dados"
                             class="p-button-outlined"
@@ -382,3 +392,141 @@
         </div>
     </ng-container>
 </div>
+
+<!-- Modal de seleção de modelo e geração de relatório DRPS -->
+<p-dialog [(visible)]="gerarRelatorioDialog" [style]="{ width: '650px' }" [modal]="true"
+    header="Gerar Relatório DRPS" class="p-fluid">
+    <ng-template pTemplate="content">
+        <div class="field">
+            <label for="modelo-relatorio">Selecione um modelo de relatório <span class="text-red-500">*</span></label>
+            <p-dropdown
+                inputId="modelo-relatorio"
+                [options]="modelosRelatorio"
+                [(ngModel)]="modeloRelatorioSelecionado"
+                optionLabel="nome"
+                [filter]="true"
+                filterBy="nome"
+                placeholder="Escolha um modelo"
+                appendTo="body"
+                [showClear]="true"
+                (onChange)="onModeloRelatorioChange()">
+            </p-dropdown>
+            <small class="text-color-secondary block mt-2" *ngIf="modelosRelatorio.length === 0">
+                Nenhum modelo de relatório disponível. Crie um modelo na seção de "Modelos" antes de gerar o relatório.
+            </small>
+        </div>
+
+        <!-- Parâmetros do modelo -->
+        <div class="mt-4" *ngIf="parametrosRelatorioDefinicao.length > 0">
+            <div id="parametros-heading" class="flex align-items-center gap-2 mb-3">
+                <i class="pi pi-sliders-h"></i>
+                <span class="font-semibold text-lg">Parâmetros do Modelo</span>
+            </div>
+
+            <div class="field" *ngFor="let param of parametrosRelatorioDefinicao">
+                <label [for]="'param-' + param.chave">{{ param.label || param.chave }}</label>
+                
+                <!-- Entrada de texto -->
+                <input
+                    *ngIf="param.tipo === 'texto'"
+                    type="text"
+                    pInputText
+                    [id]="'param-' + param.chave"
+                    [(ngModel)]="parametrosRelatorioValores[param.chave]"
+                    [placeholder]="'Digite ' + (param.label || param.chave)">
+
+                <!-- Entrada de número -->
+                <p-inputNumber
+                    *ngIf="param.tipo === 'numero'"
+                    [id]="'param-' + param.chave"
+                    [(ngModel)]="parametrosRelatorioValores[param.chave]"
+                    [placeholder]="'Digite um número'"
+                    styleClass="w-full">
+                </p-inputNumber>
+
+                <!-- Entrada de data -->
+                <p-calendar
+                    *ngIf="param.tipo === 'data'"
+                    [id]="'param-' + param.chave"
+                    [(ngModel)]="parametrosRelatorioValores[param.chave]"
+                    dateFormat="dd/mm/yy"
+                    [showIcon]="true"
+                    appendTo="body">
+                </p-calendar>
+
+                <!-- Entrada de moeda -->
+                <p-inputNumber
+                    *ngIf="param.tipo === 'moeda'"
+                    [id]="'param-' + param.chave"
+                    [(ngModel)]="parametrosRelatorioValores[param.chave]"
+                    mode="currency"
+                    currency="BRL"
+                    [placeholder]="'R$ 0,00'"
+                    styleClass="w-full">
+                </p-inputNumber>
+
+                <!-- Toggle para booleano -->
+                <div *ngIf="param.tipo === 'booleano'" class="flex align-items-center">
+                    <p-inputSwitch
+                        [id]="'param-' + param.chave"
+                        [(ngModel)]="parametrosRelatorioValores[param.chave]">
+                    </p-inputSwitch>
+                    <label [for]="'param-' + param.chave" class="ml-2 m-0">
+                        {{ parametrosRelatorioValores[param.chave] ? 'Ativado' : 'Desativado' }}
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex gap-2 mt-4" *ngIf="modeloRelatorioSelecionado">
+            <button
+                pButton
+                type="button"
+                icon="pi pi-eye"
+                label="Visualizar"
+                class="p-button-outlined"
+                (click)="carregarPreviewRelatorio()">
+            </button>
+        </div>
+    </ng-template>
+
+    <ng-template pTemplate="footer">
+        <button pButton pRipple label="Cancelar" icon="pi pi-times" class="p-button-text" (click)="gerarRelatorioDialog = false"></button>
+        <button
+            pButton
+            type="button"
+            icon="pi pi-save"
+            label="Salvar"
+            class="p-button-success"
+            [loading]="salvandoModeloRelatorio"
+            [disabled]="!modeloRelatorioSelecionado || salvandoModeloRelatorio"
+            (click)="salvarModeloRelatorio()">
+        </button>
+        <button
+            pButton
+            type="button"
+            icon="pi pi-file-pdf"
+            label="Gerar PDF"
+            class="p-button"
+            [disabled]="!modeloRelatorioSelecionado"
+            (click)="gerarRelatorioDRPS()">
+        </button>
+    </ng-template>
+</p-dialog>
+
+<!-- Modal de prévia do relatório DRPS -->
+<p-dialog [(visible)]="previewRelatorioDialog" [modal]="true" [maximizable]="false" [dismissableMask]="true"
+    header="Prévia do Relatório DRPS" styleClass="preview-dialog" [style]="{ width: '95vw', height: '95vh' }"
+    [contentStyle]="{ padding: '0', height: '100%' }" (onHide)="fecharPreviewRelatorio()">
+    <div class="preview-fullscreen" style="height: 100%;">
+        <iframe *ngIf="previewRelatorioUrl" [src]="previewRelatorioUrl" class="preview-frame"
+            title="Prévia do Relatório DRPS" sandbox="allow-same-origin allow-popups"
+            style="width: 100%; height: 100%; border: none;"></iframe>
+        <div *ngIf="!previewRelatorioUrl" class="preview-empty">Nada para pré-visualizar.</div>
+    </div>
+
+    <ng-template pTemplate="footer">
+        <button pButton pRipple label="Fechar" icon="pi pi-times" class="p-button-text" (click)="fecharPreviewRelatorio()"></button>
+        <button pButton pRipple label="Gerar PDF" icon="pi pi-file-pdf" class="p-button" (click)="gerarRelatorioDRPS(); fecharPreviewRelatorio()"></button>
+    </ng-template>
+</p-dialog>

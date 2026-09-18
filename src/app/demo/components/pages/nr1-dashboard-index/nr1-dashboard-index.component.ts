@@ -1,6 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { MessageService } from 'primeng/api';
 import { AplicacaoNr1, AplicacaoNr1Service } from 'src/app/demo/service/aplicacao-nr1.service';
+import { Modelo, ModeloService, ParametroSchema } from 'src/app/demo/service/modelo.service';
 import {
     ComparativoSetor,
     MetricaFatorRisco,
@@ -99,7 +101,7 @@ const PLANO_DE_ACAO_LABELS: Record<string, string> = {
     styleUrl: './nr1-dashboard-index.component.scss',
     providers: [MessageService]
 })
-export class Nr1DashboardIndexComponent implements OnInit {
+export class Nr1DashboardIndexComponent implements OnInit, OnDestroy {
     /** Aplicações (lotes) disponíveis para análise. */
     aplicacaoOptions: SelectOption[] = [];
     aplicacaoSelecionadaId: string | null = null;
@@ -141,9 +143,21 @@ export class Nr1DashboardIndexComponent implements OnInit {
 
     /** Estado e resultado da geração do laudo por IA. */
     gerandoLaudo = false;
+    gerandoRelatorio = false;
     salvandoDadosRelatorio = false;
     laudoResultado: LaudoNr1Resultado | null = null;
     planoDeAcaoColunas: string[] = [];
+
+    /** Modal de seleção de modelo e preview do relatório DRPS. */
+    gerarRelatorioDialog = false;
+    modelosRelatorio: Modelo[] = [];
+    modeloRelatorioSelecionado: Modelo | null = null;
+    parametrosRelatorioDefinicao: ParametroSchema[] = [];
+    parametrosRelatorioValores: Record<string, any> = {};
+    salvandoModeloRelatorio = false;
+    previewRelatorioDialog = false;
+    previewRelatorioUrl: SafeResourceUrl | null = null;
+    private previewObjectUrl: string | null = null;
 
     private aplicacoes: AplicacaoNr1[] = [];
 
@@ -151,12 +165,19 @@ export class Nr1DashboardIndexComponent implements OnInit {
         private readonly messageService: MessageService,
         private readonly aplicacaoService: AplicacaoNr1Service,
         private readonly metricasService: MetricasNr1Service,
-        private readonly supabaseService: SupabaseService
+        private readonly supabaseService: SupabaseService,
+        private readonly modeloService: ModeloService,
+        private readonly sanitizer: DomSanitizer
     ) {}
 
     ngOnInit(): void {
         this.initChartOptions();
         void this.loadAplicacoes();
+        void this.loadModelosRelatorio();
+    }
+
+    ngOnDestroy(): void {
+        this.revokePreviewRelatorio();
     }
 
     async loadAplicacoes(): Promise<void> {
@@ -425,6 +446,241 @@ export class Nr1DashboardIndexComponent implements OnInit {
         }
 
         this.laudoResultado.plano_de_acao.splice(index, 1);
+    }
+
+    async abrirModalGerarRelatorio(): Promise<void> {
+        if (!this.laudoResultado || !this.resumo || !this.aplicacaoSelecionada) {
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Erro',
+                detail: 'Dados insuficientes para gerar o relatório.',
+                life: 5000
+            });
+            return;
+        }
+
+        this.modeloRelatorioSelecionado = null;
+        this.parametrosRelatorioDefinicao = [];
+        this.parametrosRelatorioValores = {};
+        this.gerarRelatorioDialog = true;
+    }
+
+    onModeloRelatorioChange(): void {
+        this.carregarParametrosRelatorio();
+    }
+
+    private carregarParametrosRelatorio(): void {
+        if (!this.modeloRelatorioSelecionado) {
+            this.parametrosRelatorioDefinicao = [];
+            this.parametrosRelatorioValores = {};
+            return;
+        }
+
+        // Carrega os parâmetros do modelo (sem os automáticos)
+        this.parametrosRelatorioDefinicao = this.modeloRelatorioSelecionado.parametros_schema || [];
+
+        // Inicializa os valores dos parâmetros
+        const novosValores: Record<string, any> = {};
+        for (const param of this.parametrosRelatorioDefinicao) {
+            novosValores[param.chave] = this.parametrosRelatorioValores[param.chave] ?? null;
+        }
+        this.parametrosRelatorioValores = novosValores;
+    }
+
+    async carregarPreviewRelatorio(): Promise<void> {
+        if (!this.modeloRelatorioSelecionado) {
+            return;
+        }
+
+        try {
+            // Substitui os placeholders do modelo com dados do laudo
+            const conteudo = this.substituirPlaceholdersModelo(this.modeloRelatorioSelecionado.content || '');
+            this.gerarPreviewRelatorio(conteudo);
+            this.previewRelatorioDialog = true;
+        } catch (error) {
+            console.error('Erro ao carregar preview do relatório:', error);
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Erro',
+                detail: 'Não foi possível carregar a prévia do relatório.',
+                life: 5000
+            });
+        }
+    }
+
+    gerarRelatorioDRPS(): void {
+        if (!this.modeloRelatorioSelecionado) {
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Erro',
+                detail: 'Selecione um modelo de relatório.',
+                life: 5000
+            });
+            return;
+        }
+
+        try {
+            const conteudo = this.substituirPlaceholdersModelo(this.modeloRelatorioSelecionado.content || '');
+            const blob = new Blob([conteudo], { type: 'text/html;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const novaJanela = window.open(url, '_blank');
+            
+            if (!novaJanela) {
+                throw new Error('Não foi possível abrir a janela do relatório');
+            }
+
+            // Limpa o blob após abrir
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+            this.gerarRelatorioDialog = false;
+            this.messageService.add({
+                severity: 'success',
+                summary: 'Relatório gerado',
+                detail: 'O relatório DRPS foi gerado com sucesso.',
+                life: 4000
+            });
+        } catch (error) {
+            console.error('Erro ao gerar relatório DRPS:', error);
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Erro',
+                detail: 'Não foi possível gerar o relatório. Tente novamente.',
+                life: 5000
+            });
+        }
+    }
+
+    async salvarModeloRelatorio(): Promise<void> {
+        if (!this.modeloRelatorioSelecionado || !this.aplicacaoSelecionada?.id) {
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Erro',
+                detail: 'Selecione um modelo e uma aplicação antes de salvar.',
+                life: 5000
+            });
+            return;
+        }
+
+        this.salvandoModeloRelatorio = true;
+
+        try {
+            await this.aplicacaoService.atualizarModeloRelatorio(
+                this.aplicacaoSelecionada.id,
+                this.modeloRelatorioSelecionado.id || null,
+                this.parametrosRelatorioValores
+            );
+
+            this.gerarRelatorioDialog = false;
+            this.messageService.add({
+                severity: 'success',
+                summary: 'Salvo com sucesso',
+                detail: 'O modelo e os parâmetros foram salvos na aplicação.',
+                life: 4000
+            });
+        } catch (error) {
+            console.error('Erro ao salvar modelo do relatório:', error);
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Erro',
+                detail: 'Não foi possível salvar o modelo. Tente novamente.',
+                life: 5000
+            });
+        } finally {
+            this.salvandoModeloRelatorio = false;
+        }
+    }
+
+    private async loadModelosRelatorio(): Promise<void> {
+        try {
+            const todos = await this.modeloService.getAll();
+            // Filtra apenas modelos de tipo RELATORIO que estão ATIVO
+            this.modelosRelatorio = todos.filter(m => m.tipo === 'RELATORIO' && m.status === 'ATIVO');
+        } catch (error) {
+            console.error('Erro ao carregar modelos de relatório:', error);
+        }
+    }
+
+    private substituirPlaceholdersModelo(html: string): string {
+        let resultado = html;
+
+        // Substitui parâmetros personalizados do modelo
+        for (const chave in this.parametrosRelatorioValores) {
+            const valor = this.parametrosRelatorioValores[chave] ?? '';
+            const padrao = new RegExp(`\\$\\{${chave}\\}`, 'g');
+            resultado = resultado.replace(padrao, String(valor));
+        }
+
+        // Substitui placeholders dinâmicos do laudo
+        resultado = resultado.replace(/\$\{setor\}/g, this.setorSelecionadoLabel);
+        resultado = resultado.replace(/\$\{laudo_tecnico\}/g, this.laudoResultado?.laudo_tecnico || '');
+        resultado = resultado.replace(/\$\{conclusao\}/g, this.laudoResultado?.conclusao || '');
+        resultado = resultado.replace(/\$\{empresa\}/g, this.aplicacaoSelecionada?.filial?.empresa?.nome || 'Empresa');
+
+        // Gera as linhas da tabela de classificação de risco
+        const linhasTabela = this.gerarLinhasClassificacaoRisco();
+        resultado = resultado.replace(/\$\{classificacao_risco_topicos\}/g, linhasTabela);
+
+        return resultado;
+    }
+
+    private gerarPreviewRelatorio(html: string): void {
+        this.revokePreviewRelatorio();
+        const conteudo = html || '<p style="font-family:sans-serif;color:#888;padding:24px">Sem conteúdo para pré-visualizar.</p>';
+        const blob = new Blob([conteudo], { type: 'text/html;charset=utf-8' });
+        this.previewObjectUrl = URL.createObjectURL(blob);
+        this.previewRelatorioUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.previewObjectUrl);
+    }
+
+    fecharPreviewRelatorio(): void {
+        this.previewRelatorioDialog = false;
+        this.revokePreviewRelatorio();
+    }
+
+    private revokePreviewRelatorio(): void {
+        if (this.previewObjectUrl) {
+            URL.revokeObjectURL(this.previewObjectUrl);
+            this.previewObjectUrl = null;
+        }
+        this.previewRelatorioUrl = null;
+    }
+
+    private gerarLinhasClassificacaoRisco(): string {
+        if (!this.resumo || !this.resumo.topicos) {
+            return '';
+        }
+
+        return this.resumo.topicos.map(topico => {
+            const fonteGeradora = FONTES_GERADORAS[topico.fator_risco] || '';
+            const gravidade = topico.gravidade_classe || '—';
+            const probabilidade = topico.probabilidade_classe || '—';
+            const risco = topico.risco_classe || '—';
+
+            // Determina a classe CSS para a cor de fundo baseado no nível
+            const gravCssClass = this.obterCssClassRisco(gravidade);
+            const probCssClass = this.obterCssClassRisco(probabilidade);
+            const riscoCssClass = this.obterCssClassRisco(risco);
+
+            return `<tr>
+          <td class="fator-cell">${topico.fator_risco}</td>
+          <td class="fonte-cell">${fonteGeradora}</td>
+          <td class="risco-cell ${gravCssClass}">${gravidade}</td>
+          <td class="risco-cell ${probCssClass}">${probabilidade}</td>
+          <td class="risco-cell ${riscoCssClass}">${risco}</td>
+        </tr>`;
+        }).join('\n        ');
+    }
+
+    private obterCssClassRisco(nivel: string): string {
+        const mapa: Record<string, string> = {
+            'Baixa': 'baixa-fill',
+            'Baixo': 'baixo-fill',
+            'Média': 'media-fill',
+            'Médio': 'media-fill',
+            'Alta': 'alta-fill',
+            'Alto': 'alto-fill',
+            'Crítico': 'critico-fill'
+        };
+        return mapa[nivel] || '';
     }
 
     // --- Helpers de exibição ---
