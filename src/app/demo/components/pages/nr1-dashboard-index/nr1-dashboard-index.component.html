@@ -393,12 +393,21 @@
     </ng-container>
 </div>
 
-<!-- Modal de seleção de modelo e geração de relatório DRPS -->
+<!-- Modal de seleção/edição de modelo e geração de relatório DRPS -->
 <p-dialog [(visible)]="gerarRelatorioDialog" [style]="{ width: '650px' }" [modal]="true"
-    header="Gerar Relatório DRPS" class="p-fluid">
+    [header]="aplicacaoSelecionada?.modelo_id ? 'Editar Modelo do Relatório DRPS' : 'Gerar Relatório DRPS'" class="p-fluid">
     <ng-template pTemplate="content">
+        <!-- Aviso quando em modo edição -->
+        <p-message *ngIf="aplicacaoSelecionada?.modelo_id"
+            severity="info"
+            text="Os dados abaixo estão associados a esta aplicação e serão salvos quando você confirmar."
+            styleClass="w-full mb-4">
+        </p-message>
+
         <div class="field">
-            <label for="modelo-relatorio">Selecione um modelo de relatório <span class="text-red-500">*</span></label>
+            <label for="modelo-relatorio">
+                Selecione um modelo de relatório <span class="text-red-500">*</span>
+            </label>
             <p-dropdown
                 inputId="modelo-relatorio"
                 [options]="modelosRelatorio"
@@ -408,11 +417,14 @@
                 filterBy="nome"
                 placeholder="Escolha um modelo"
                 appendTo="body"
-                [showClear]="true"
+                [showClear]="!aplicacaoSelecionada?.modelo_id"
                 (onChange)="onModeloRelatorioChange()">
             </p-dropdown>
             <small class="text-color-secondary block mt-2" *ngIf="modelosRelatorio.length === 0">
                 Nenhum modelo de relatório disponível. Crie um modelo na seção de "Modelos" antes de gerar o relatório.
+            </small>
+            <small class="text-color-secondary block mt-2" *ngIf="aplicacaoSelecionada?.modelo_id">
+                Modelo já associado a esta aplicação
             </small>
         </div>
 
@@ -425,7 +437,7 @@
 
             <div class="field" *ngFor="let param of parametrosRelatorioDefinicao">
                 <label [for]="'param-' + param.chave">{{ param.label || param.chave }}</label>
-                
+
                 <!-- Entrada de texto -->
                 <input
                     *ngIf="param.tipo === 'texto'"
@@ -492,6 +504,8 @@
 
     <ng-template pTemplate="footer">
         <button pButton pRipple label="Cancelar" icon="pi pi-times" class="p-button-text" (click)="gerarRelatorioDialog = false"></button>
+
+        <!-- Botão para salvar o modelo e parâmetros -->
         <button
             pButton
             type="button"
@@ -500,8 +514,11 @@
             class="p-button-success"
             [loading]="salvandoModeloRelatorio"
             [disabled]="!modeloRelatorioSelecionado || salvandoModeloRelatorio"
-            (click)="salvarModeloRelatorio()">
+            (click)="salvarModeloNaAplicacao()"
+            pTooltip="Salva o modelo e parâmetros na aplicação">
         </button>
+
+        <!-- Botão para gerar PDF (apenas se um modelo estiver selecionado) -->
         <button
             pButton
             type="button"
@@ -509,7 +526,8 @@
             label="Gerar PDF"
             class="p-button"
             [disabled]="!modeloRelatorioSelecionado"
-            (click)="gerarRelatorioDRPS()">
+            (click)="gerarRelatorioDRPS()"
+            pTooltip="Gera o relatório em PDF com os parâmetros atuais">
         </button>
     </ng-template>
 </p-dialog>

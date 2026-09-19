@@ -168,7 +168,7 @@ export class Nr1DashboardIndexComponent implements OnInit, OnDestroy {
         private readonly supabaseService: SupabaseService,
         private readonly modeloService: ModeloService,
         private readonly sanitizer: DomSanitizer
-    ) {}
+    ) { }
 
     ngOnInit(): void {
         this.initChartOptions();
@@ -449,6 +449,7 @@ export class Nr1DashboardIndexComponent implements OnInit, OnDestroy {
     }
 
     async abrirModalGerarRelatorio(): Promise<void> {
+        console.log("this.gerarHtmlTabela(): ", this.gerarHtmlTabela())
         if (!this.laudoResultado || !this.resumo || !this.aplicacaoSelecionada) {
             this.messageService.add({
                 severity: 'error',
@@ -459,9 +460,29 @@ export class Nr1DashboardIndexComponent implements OnInit, OnDestroy {
             return;
         }
 
-        this.modeloRelatorioSelecionado = null;
-        this.parametrosRelatorioDefinicao = [];
-        this.parametrosRelatorioValores = {};
+        // Modo edição: pré-preenche com o modelo associado se houver
+        if (this.aplicacaoSelecionada.modelo_id) {
+            const modeloAssociado = this.modelosRelatorio.find(
+                m => m.id === this.aplicacaoSelecionada?.modelo_id
+            );
+            if (modeloAssociado) {
+                // Define primeiro os parâmetros salvos
+                this.parametrosRelatorioValores = { ...this.aplicacaoSelecionada.parametros_relatorio } || {};
+                // Depois seleciona o modelo (isso vai acionar a recarga dos parâmetros)
+                this.modeloRelatorioSelecionado = modeloAssociado;
+                this.carregarParametrosRelatorio();
+            } else {
+                // Modelo não encontrado na lista
+                this.modeloRelatorioSelecionado = null;
+                this.parametrosRelatorioDefinicao = [];
+                this.parametrosRelatorioValores = {};
+            }
+        } else {
+            // Modo criação: limpa os campos
+            this.modeloRelatorioSelecionado = null;
+            this.parametrosRelatorioDefinicao = [];
+            this.parametrosRelatorioValores = {};
+        }
         this.gerarRelatorioDialog = true;
     }
 
@@ -479,11 +500,17 @@ export class Nr1DashboardIndexComponent implements OnInit, OnDestroy {
         // Carrega os parâmetros do modelo (sem os automáticos)
         this.parametrosRelatorioDefinicao = this.modeloRelatorioSelecionado.parametros_schema || [];
 
-        // Inicializa os valores dos parâmetros
+        // Sincroniza os valores dos parâmetros já salvos com os parâmetros do modelo
+        // Preserva valores já existentes e remove valores de parâmetros que já não existem
+        const valoresAtuais = this.parametrosRelatorioValores;
         const novosValores: Record<string, any> = {};
+
         for (const param of this.parametrosRelatorioDefinicao) {
-            novosValores[param.chave] = this.parametrosRelatorioValores[param.chave] ?? null;
+            // Se já existe valor salvo para este parâmetro, usa o valor existente
+            // Caso contrário, usa null (vazio)
+            novosValores[param.chave] = valoresAtuais[param.chave] ?? null;
         }
+
         this.parametrosRelatorioValores = novosValores;
     }
 
@@ -524,7 +551,7 @@ export class Nr1DashboardIndexComponent implements OnInit, OnDestroy {
             const blob = new Blob([conteudo], { type: 'text/html;charset=utf-8' });
             const url = URL.createObjectURL(blob);
             const novaJanela = window.open(url, '_blank');
-            
+
             if (!novaJanela) {
                 throw new Error('Não foi possível abrir a janela do relatório');
             }
@@ -550,7 +577,7 @@ export class Nr1DashboardIndexComponent implements OnInit, OnDestroy {
         }
     }
 
-    async salvarModeloRelatorio(): Promise<void> {
+    async salvarModeloNaAplicacao(): Promise<void> {
         if (!this.modeloRelatorioSelecionado || !this.aplicacaoSelecionada?.id) {
             this.messageService.add({
                 severity: 'error',
@@ -570,11 +597,19 @@ export class Nr1DashboardIndexComponent implements OnInit, OnDestroy {
                 this.parametrosRelatorioValores
             );
 
+            // Atualiza a aplicação local com os novos dados
+            if (this.aplicacaoSelecionada) {
+                this.aplicacaoSelecionada.modelo_id = this.modeloRelatorioSelecionado.id || undefined;
+                this.aplicacaoSelecionada.parametros_relatorio = this.parametrosRelatorioValores;
+            }
+
             this.gerarRelatorioDialog = false;
             this.messageService.add({
                 severity: 'success',
                 summary: 'Salvo com sucesso',
-                detail: 'O modelo e os parâmetros foram salvos na aplicação.',
+                detail: this.aplicacaoSelecionada?.modelo_id
+                    ? 'O modelo e os parâmetros foram atualizados na aplicação.'
+                    : 'O modelo foi associado à aplicação com sucesso.',
                 life: 4000
             });
         } catch (error) {
@@ -617,8 +652,20 @@ export class Nr1DashboardIndexComponent implements OnInit, OnDestroy {
         resultado = resultado.replace(/\$\{empresa\}/g, this.aplicacaoSelecionada?.filial?.empresa?.nome || 'Empresa');
 
         // Gera as linhas da tabela de classificação de risco
-        const linhasTabela = this.gerarLinhasClassificacaoRisco();
-        resultado = resultado.replace(/\$\{classificacao_risco_topicos\}/g, linhasTabela);
+        try {
+            const linhasTabela = this.gerarLinhasClassificacaoRisco();
+            resultado = resultado.replace(/\$\{classificacao_risco_topicos\}/g, linhasTabela);
+        } catch (error) {
+            console.warn('Erro ao gerar linhas de classificação de risco:', error);
+        }
+
+        // Gera o HTML da tabela de tópicos com gravidade/probabilidade/risco
+        try {
+            const htmlTabela = this.gerarHtmlTabela();
+            resultado = resultado.replace(/\$\{gerarHtmlTabela\}/g, htmlTabela);
+        } catch (error) {
+            console.warn('Erro ao gerar HTML da tabela:', error);
+        }
 
         return resultado;
     }
@@ -954,29 +1001,29 @@ export class Nr1DashboardIndexComponent implements OnInit, OnDestroy {
         // 1) Matriz de Risco: distribuição do risco final dos tópicos do setor filtrado.
         this.pieRiscoData = this.resumo
             ? this.contarPizza(
-                  this.resumo.topicos.map((t) => t.risco_classe),
-                  ['Baixo', 'Médio', 'Alto', 'Crítico', 'Pendente'],
-                  (c) => this.corRisco(c)
-              )
+                this.resumo.topicos.map((t) => t.risco_classe),
+                ['Baixo', 'Médio', 'Alto', 'Crítico', 'Pendente'],
+                (c) => this.corRisco(c)
+            )
             : null;
 
         // 2) Gravidade por Setor: distribuição da gravidade dos tópicos do setor filtrado.
         this.pieGravidadeSetorData = this.resumo
             ? this.contarPizza(
-                  this.resumo.topicos.map((t) => t.gravidade_classe),
-                  ['Baixa', 'Média', 'Alta'],
-                  (c) => this.corGravidade(c)
-              )
+                this.resumo.topicos.map((t) => t.gravidade_classe),
+                ['Baixa', 'Média', 'Alta'],
+                (c) => this.corGravidade(c)
+            )
             : null;
 
         // 3) Gravidade Geral: empresa como um todo — distribuição da gravidade de
         //    TODOS os tópicos na visão sem filtro (todos os setores juntos).
         this.pieGravidadeGeralData = this.resumoGeral
             ? this.contarPizza(
-                  this.resumoGeral.topicos.map((t) => t.gravidade_classe),
-                  ['Baixa', 'Média', 'Alta'],
-                  (c) => this.corGravidade(c)
-              )
+                this.resumoGeral.topicos.map((t) => t.gravidade_classe),
+                ['Baixa', 'Média', 'Alta'],
+                (c) => this.corGravidade(c)
+            )
             : null;
     }
 
@@ -1054,5 +1101,37 @@ export class Nr1DashboardIndexComponent implements OnInit, OnDestroy {
 
         // Atualiza as pizzas dependentes do resumo do setor filtrado.
         this.atualizarPizzas();
+    }
+
+    private gerarHtmlTabela(): string {
+        if (!this.resumo || !this.resumo.topicos || this.resumo.topicos.length === 0) {
+            return '';
+        }
+
+        return this.resumo.topicos.map(topico => {
+            // Ex: "Média", "Médio", "médio" -> todos viram "media"
+            const classGravidade = this.normalizarClasse(topico.gravidade_classe);
+            const classProbabilidade = this.normalizarClasse(topico.probabilidade_classe);
+            const classRisco = this.normalizarClasse(topico.risco_classe);
+
+            return `
+        <tr>
+          <td class="fator-cell">${topico.fator_risco || ''}</td>
+          <td class="fonte-cell">${this.fonteGeradora(topico.fator_risco) || ''}</td>
+          <td class="risco-cell ${classGravidade}-fill">${topico.gravidade_classe || ''}</td>
+          <td class="risco-cell ${classProbabilidade}-fill">${topico.probabilidade_classe || ''}</td>
+          <td class="risco-cell ${classRisco}-fill">${topico.risco_classe || ''}</td>
+        </tr>`;
+        }).join('');
+    }
+
+    private normalizarClasse(texto) {
+        if (!texto) return '';
+
+        return texto
+            .toLowerCase()
+            .normalize('NFD')                     // Separa os acentos das letras (ex: 'é' vira 'e' + '´')
+            .replace(/[\u0300-\u036f]/g, '')     // Remove os caracteres de acentuação
+            .trim();                              // Remove espaços nas pontas
     }
 }

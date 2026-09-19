@@ -27,7 +27,7 @@ export interface AplicacaoNr1 {
   status: string;
   dados_relatorio?: unknown | null;
   video_url?: string | null;
-  modelo_relatorio_id?: string | null;
+  modelo_id?: string | null;
   parametros_relatorio?: Record<string, any> | null;
   filial?: AplicacaoNr1FilialSummary | null;
   setor?: AplicacaoNr1RefSummary | null;
@@ -105,9 +105,11 @@ export class AplicacaoNr1Service {
     filial_id,
     setor_id,
     cargo_id,
+    modelo_id,
     nome,
     status,
     dados_relatorio,
+    parametros_relatorio,
     video_url,
     created_at,
     updated_at,
@@ -298,6 +300,8 @@ export class AplicacaoNr1Service {
       filial_id: item.filial_id,
       setor_id: item.setor_id,
       cargo_id: item.cargo_id,
+      modelo_id: item.modelo_id ?? null,
+      parametros_relatorio: item.parametros_relatorio ?? null,
       nome: item.nome,
       status: item.status,
       dados_relatorio: item.dados_relatorio ?? null,
