@@ -38,6 +38,27 @@ interface AplicacaoDadosRelatorio {
     [key: string]: unknown;
 }
 
+interface ChartDataset {
+    data: number[];
+    backgroundColor: string[];
+    borderColor?: string;
+    borderWidth?: number;
+}
+
+interface ChartData {
+    labels: string[];
+    datasets: ChartDataset[];
+}
+
+interface ItemPlanoAcao {
+    fator_de_risco_identificado?: string;
+    classificacao_final?: string;
+    descricao_sintetica_do_problema?: string;
+    medida_preventiva_recomendada?: string;
+    responsavel?: string;
+    prazo?: string;
+}
+
 /** Paleta fixa por classificação (verde/amarelo/vermelho/preto). */
 const COR_BAIXO = '#22c55e';   // verde
 const COR_MEDIO = '#eab308';   // amarelo
@@ -449,7 +470,7 @@ export class Nr1DashboardIndexComponent implements OnInit, OnDestroy {
     }
 
     async abrirModalGerarRelatorio(): Promise<void> {
-        console.log("this.gerarHtmlTabela(): ", this.gerarHtmlTabela())
+        console.log('this.laudoResultado', this.laudoResultado);
         if (!this.laudoResultado || !this.resumo || !this.aplicacaoSelecionada) {
             this.messageService.add({
                 severity: 'error',
@@ -665,6 +686,22 @@ export class Nr1DashboardIndexComponent implements OnInit, OnDestroy {
             resultado = resultado.replace(/\$\{gerarHtmlTabela\}/g, htmlTabela);
         } catch (error) {
             console.warn('Erro ao gerar HTML da tabela:', error);
+        }
+
+        // Gera o HTML dos gráficos (painéis de pizza)
+        try {
+            const htmlGrafico = this.gerarHtmlGrafico();
+            resultado = resultado.replace(/\$\{gerarHtmlGrafico\}/g, htmlGrafico);
+        } catch (error) {
+            console.warn('Erro ao gerar HTML do gráfico:', error);
+        }
+
+        // Gera as linhas HTML da tabela do Plano de Ação
+        try {
+            const htmlTabelaPlanoAcao = this.gerarHtmlTabelaPlanoAcao();
+            resultado = resultado.replace(/\$\{gerarHtmlTabelaPlanoAcao\}/g, htmlTabelaPlanoAcao);
+        } catch (error) {
+            console.warn('Erro ao gerar HTML da tabela do plano de ação:', error);
         }
 
         return resultado;
@@ -1025,6 +1062,10 @@ export class Nr1DashboardIndexComponent implements OnInit, OnDestroy {
                 (c) => this.corGravidade(c)
             )
             : null;
+
+        console.log('pieRiscoData:', this.pieRiscoData);
+        console.log('pieGravidadeSetorData:', this.pieGravidadeSetorData);
+        console.log('pieGravidadeGeralData:', this.pieGravidadeGeralData);
     }
 
     /** Conta ocorrências de cada classe e monta o dataset de pizza (ignora classes com contagem 0). */
@@ -1133,5 +1174,129 @@ export class Nr1DashboardIndexComponent implements OnInit, OnDestroy {
             .normalize('NFD')                     // Separa os acentos das letras (ex: 'é' vira 'e' + '´')
             .replace(/[\u0300-\u036f]/g, '')     // Remove os caracteres de acentuação
             .trim();                              // Remove espaços nas pontas
+    }
+
+    private gerarConicGradient(chartData: ChartData): string {
+        if (!chartData || !chartData.datasets || !chartData.datasets[0]) {
+            return 'conic-gradient(#e5e7eb 0 100%)';
+        }
+
+        const values = chartData.datasets[0].data || [];
+        const colors = chartData.datasets[0].backgroundColor || [];
+        const total = values.reduce((acc, val) => acc + val, 0);
+
+        // Evita divisão por zero se não houver dados
+        if (total === 0) {
+            return 'conic-gradient(#e5e7eb 0 100%)';
+        }
+
+        let percentualAcumulado = 0;
+        const fatias: string[] = [];
+
+        values.forEach((valor, index) => {
+            if (valor <= 0) return; // Ignora fatias zeradas para não sujar o CSS
+
+            const percentual = (valor / total) * 100;
+            const inicio = percentualAcumulado.toFixed(1);
+            percentualAcumulado += percentual;
+            const fim = percentualAcumulado.toFixed(1);
+
+            const cor = colors[index] || '#cccccc';
+            fatias.push(`${cor} ${inicio}% ${fim}%`);
+        });
+
+        return `conic-gradient(${fatias.join(', ')})`;
+    }
+
+    /**
+     * Gera o HTML das legendas a partir dos labels e cores do dataset
+     */
+    private gerarHtmlLegenda(chartData: ChartData): string {
+        if (!chartData || !chartData.labels || !chartData.datasets || !chartData.datasets[0]) {
+            return '';
+        }
+
+        const labels = chartData.labels;
+        const colors = chartData.datasets[0].backgroundColor || [];
+        const values = chartData.datasets[0].data || [];
+
+        // Soma total dos valores para o cálculo percentual
+        const total = values.reduce((acc, val) => acc + val, 0);
+
+        return labels
+            .map((label, index) => {
+                const cor = colors[index] || '#cccccc';
+                const valor = values[index] ?? 0;
+
+                // Calcula o percentual (arredondado sem casas decimais)
+                const percentual = total > 0 ? Math.round((valor / total) * 100) : 0;
+
+                // Formato desejado: Rótulo: Valor (Percentual%)
+                return `<span><i class="swatch" style="background:${cor};"></i>${label}: ${valor} (${percentual}%)</span>`;
+            })
+            .join('\n            ');
+    }
+
+    /**
+     * Método principal que monta a estrutura completa do painel em HTML
+     */
+    private gerarHtmlGrafico(): string {
+        const paineis = [
+            { titulo: 'Matriz de Risco', data: this.pieRiscoData },
+            { titulo: 'Gravidade Por Setor', data: this.pieGravidadeSetorData },
+            { titulo: 'Gravidade Geral', data: this.pieGravidadeGeralData }
+        ];
+
+        const colunasHtml = paineis
+            .map(painel => {
+                const gradient = this.gerarConicGradient(painel.data);
+                const legenda = this.gerarHtmlLegenda(painel.data);
+
+                return `
+        <div class="painel-col">
+          <div class="cap">${painel.titulo}</div>
+          <div class="donut" style="background: ${gradient};"></div>
+          <div class="legend">
+            ${legenda}
+          </div>
+        </div>`;
+            })
+            .join('');
+
+        return `
+        <h3>Painel Resumo NR-1</h3>
+        <div class="painel-grid">${colunasHtml}
+        </div>`;
+    }
+
+    /**
+   * Gera as linhas HTML da tabela do Plano de Ação a partir de this.laudoResultado.plano_de_acao
+   */
+    private gerarHtmlTabelaPlanoAcao(): string {
+        const planoAcao = this.laudoResultado?.plano_de_acao;
+
+        if (!planoAcao || !Array.isArray(planoAcao) || planoAcao.length === 0) {
+            return `
+        <tr>
+          <td colspan="6" style="text-align: center;">Nenhum plano de ação cadastrado.</td>
+        </tr>`;
+        }
+
+        return planoAcao
+            .map((item: ItemPlanoAcao) => {
+                // Normaliza a classificação ("Crítico" -> "critico", "Alto" -> "alto", etc.)
+                const classeRisco = this.normalizarClasse(item.classificacao_final);
+
+                return `
+        <tr>
+          <td>${item.fator_de_risco_identificado || ''}</td>
+          <td class="${classeRisco}">${item.classificacao_final || ''}</td>
+          <td>${item.descricao_sintetica_do_problema || ''}</td>
+          <td>${item.medida_preventiva_recomendada || ''}</td>
+          <td>${item.responsavel || ''}</td>
+          <td>${item.prazo || ''}</td>
+        </tr>`;
+            })
+            .join('');
     }
 }
