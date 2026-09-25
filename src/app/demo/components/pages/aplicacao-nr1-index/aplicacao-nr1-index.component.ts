@@ -77,6 +77,14 @@ export class AplicacaoNr1IndexComponent implements OnInit {
     qrDialog = false;
     qrToken: TokenAplicacaoNr1 | null = null;
 
+    // Link único da aplicação
+    linkAplicacaoDialog = false;
+    aplicacaoParaLink: AplicacaoNr1 | null = null;
+
+    // QR code único da aplicação
+    qrAplicacaoDialog = false;
+    aplicacaoParaQr: AplicacaoNr1 | null = null;
+
     // Edição de status
     statusDialog = false;
     salvandoStatus = false;
@@ -314,9 +322,20 @@ export class AplicacaoNr1IndexComponent implements OnInit {
         return `${this.baseUrl}/pesquisa/nr1/${token}`;
     }
 
+    /** URL da aplicação (acesso intermediário com CPF) */
+    linkAcessoAplicacao(aplicacaoId: string): string {
+        return `${this.baseUrl}/aplicacao/nr1/${aplicacaoId}`;
+    }
+
     /** URL de imagem PNG do QR code do link (via serviço público, sem dependências). */
     qrCodeUrl(token: string, tamanho = 220): string {
         const link = encodeURIComponent(this.linkDoToken(token));
+        return `https://api.qrserver.com/v1/create-qr-code/?size=${tamanho}x${tamanho}&margin=8&data=${link}`;
+    }
+
+    /** QR code da aplicação (acesso intermediário) */
+    qrCodeAplicacao(aplicacaoId: string, tamanho = 220): string {
+        const link = encodeURIComponent(this.linkAcessoAplicacao(aplicacaoId));
         return `https://api.qrserver.com/v1/create-qr-code/?size=${tamanho}x${tamanho}&margin=8&data=${link}`;
     }
 
@@ -335,6 +354,43 @@ export class AplicacaoNr1IndexComponent implements OnInit {
         const a = document.createElement('a');
         a.href = this.qrCodeUrl(this.qrToken.token, 600);
         a.download = `qrcode-nr1-${nome}.png`;
+        a.target = '_blank';
+        a.rel = 'noopener';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+
+    /** Abre diálogo com o link único da aplicação */
+    abrirLinkAplicacao(aplicacao: AplicacaoNr1): void {
+        this.aplicacaoParaLink = aplicacao;
+        this.linkAplicacaoDialog = true;
+    }
+
+    /** Abre diálogo com o QR code único da aplicação */
+    abrirQrAplicacao(aplicacao: AplicacaoNr1): void {
+        this.aplicacaoParaQr = aplicacao;
+        this.qrAplicacaoDialog = true;
+    }
+
+    /** Copia o link da aplicação para a área de transferência */
+    async copiarLinkAplicacao(): Promise<void> {
+        if (!this.aplicacaoParaLink?.id) {
+            return;
+        }
+        const link = this.linkAcessoAplicacao(this.aplicacaoParaLink.id);
+        await this.copiar(link);
+    }
+
+    /** Baixa o PNG do QR code da aplicação */
+    baixarQrAplicacao(): void {
+        if (!this.aplicacaoParaQr?.id) {
+            return;
+        }
+        const nome = (this.aplicacaoParaQr.nome || 'aplicacao').replace(/[^\w\-]+/g, '_');
+        const a = document.createElement('a');
+        a.href = this.qrCodeAplicacao(this.aplicacaoParaQr.id, 600);
+        a.download = `qrcode-aplicacao-nr1-${nome}.png`;
         a.target = '_blank';
         a.rel = 'noopener';
         document.body.appendChild(a);

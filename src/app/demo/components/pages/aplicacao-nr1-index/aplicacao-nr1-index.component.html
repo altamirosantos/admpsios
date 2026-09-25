@@ -61,9 +61,13 @@
                         </td>
                         <td>{{ aplicacao.created_at ? (aplicacao.created_at | date: 'dd/MM/yyyy HH:mm') : '—' }}</td>
                         <td>
-                            <div class="flex gap-2">
+                            <div class="flex gap-2 flex-wrap">
                                 <button pButton pRipple icon="pi pi-link" class="p-button-rounded p-button-secondary"
                                     (click)="abrirLinks(aplicacao)" pTooltip="Ver links / enviar e-mails"></button>
+                                <button pButton pRipple icon="pi pi-external-link" class="p-button-rounded p-button-info"
+                                    (click)="abrirLinkAplicacao(aplicacao)" pTooltip="Gerar link único"></button>
+                                <button pButton pRipple icon="pi pi-qrcode" class="p-button-rounded p-button-warning"
+                                    (click)="abrirQrAplicacao(aplicacao)" pTooltip="Gerar QR code"></button>
                                 <button pButton pRipple icon="pi pi-sync" class="p-button-rounded p-button-help"
                                     (click)="editarStatus(aplicacao)" pTooltip="Alterar status"></button>
                             </div>
@@ -275,6 +279,63 @@
             (click)="copiar(linkDoToken(qrToken!.token))" [disabled]="!qrToken"></button>
         <button pButton pRipple type="button" label="Baixar PNG" icon="pi pi-download"
             (click)="baixarQrCode()" [disabled]="!qrToken"></button>
+    </ng-template>
+</p-dialog>
+
+<!-- Diálogo: Link único da aplicação -->
+<p-dialog [(visible)]="linkAplicacaoDialog" [modal]="true" [style]="{ width: '620px' }"
+    header="Link único de acesso à aplicação" [dismissableMask]="true" class="p-fluid">
+    <div *ngIf="aplicacaoParaLink" class="py-2">
+        <div class="mb-4">
+            <small class="text-color-secondary block mb-2">Aplicação</small>
+            <div class="font-semibold">{{ aplicacaoParaLink.nome }}</div>
+        </div>
+
+        <div class="mb-4">
+            <small class="text-color-secondary block mb-2">Compartilhe este link com os colaboradores:</small>
+            <div class="p-3" style="background-color: var(--surface-card); border-radius: 6px; border: 1px solid var(--surface-border);">
+                <p class="m-0 font-mono text-sm" style="word-break: break-all; line-height: 1.5;">
+                    {{ linkAcessoAplicacao(aplicacaoParaLink.id!) }}
+                </p>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <small class="text-color-secondary block mb-2">Instruções:</small>
+            <ul class="m-0 text-sm text-color-secondary">
+                <li>Colaboradores acessam o link</li>
+                <li>Preenchem seu CPF</li>
+                <li>São redirecionados para o questionário</li>
+                <li>Podem retomar uma resposta iniciada</li>
+            </ul>
+        </div>
+    </div>
+    <ng-template pTemplate="footer">
+        <button pButton pRipple label="Fechar" icon="pi pi-times" class="p-button-text"
+            (click)="linkAplicacaoDialog = false"></button>
+        <button pButton pRipple label="Copiar link" icon="pi pi-copy"
+            (click)="copiarLinkAplicacao()" [disabled]="!aplicacaoParaLink"></button>
+    </ng-template>
+</p-dialog>
+
+<!-- Diálogo: QR code único da aplicação -->
+<p-dialog [(visible)]="qrAplicacaoDialog" [modal]="true" [style]="{ width: '400px' }"
+    header="QR code de acesso à aplicação" [dismissableMask]="true">
+    <div *ngIf="aplicacaoParaQr" class="text-center py-2">
+        <div class="mb-3 font-semibold">{{ aplicacaoParaQr.nome }}</div>
+        <img [src]="qrCodeAplicacao(aplicacaoParaQr.id!, 280)"
+            alt="QR code de acesso à aplicação"
+            width="280" height="280"
+            style="border:2px solid var(--surface-border); border-radius:8px;" />
+        <p class="text-color-secondary text-xs mt-3 mb-0" style="word-break: break-all;">
+            {{ linkAcessoAplicacao(aplicacaoParaQr.id!) }}
+        </p>
+    </div>
+    <ng-template pTemplate="footer">
+        <button pButton pRipple type="button" label="Fechar" icon="pi pi-times" class="p-button-text"
+            (click)="qrAplicacaoDialog = false"></button>
+        <button pButton pRipple type="button" label="Baixar PNG" icon="pi pi-download"
+            (click)="baixarQrAplicacao()" [disabled]="!aplicacaoParaQr"></button>
     </ng-template>
 </p-dialog>
 

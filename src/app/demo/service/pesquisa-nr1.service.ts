@@ -192,6 +192,124 @@ export class PesquisaNr1Service {
     return Number(row?.total_itens ?? 0);
   }
 
+  /**
+   * Valida e vincula um CPF ao acesso da aplicação NR-1, ou recupera um acesso
+   * em progresso. Chamado na etapa intermediária (antes do questionário).
+   *
+   * Retorna um objeto com:
+   *   - status: 'sucesso' | 'respondido' | 'sem_tokens' | 'aplicacao_inativa' | 'erro'
+   *   - token: o token do questionário (se sucesso ou recuperação)
+   *   - session_id: o ID da sessão gerado
+   *   - mensagem: descrição do resultado
+   */
+  async vincularOuRecuperarTokenNr1(
+    aplicacaoNr1Id: string,
+    cpf: string
+  ): Promise<{
+    status: 'sucesso' | 'respondido' | 'sem_tokens' | 'aplicacao_inativa' | 'erro';
+    token: string | null;
+    session_id: string | null;
+    mensagem: string;
+  }> {
+    // Validações básicas
+    if (!aplicacaoNr1Id || !this.isUuid(aplicacaoNr1Id)) {
+      return {
+        status: 'erro',
+        token: null,
+        session_id: null,
+        mensagem: 'ID da aplicação inválido.'
+      };
+    }
+
+    // Valida e limpa o CPF
+    const cpfLimpo = this.normalizarCpf(cpf);
+    if (!this.validarCpf(cpfLimpo)) {
+      return {
+        status: 'erro',
+        token: null,
+        session_id: null,
+        mensagem: 'CPF inválido. Verifique o número e tente novamente.'
+      };
+    }
+
+    // Chama a RPC
+    const { data, error } = await this.supabaseService.client.rpc('vincular_ou_recuperar_token_nr1', {
+      p_aplicacao_nr1_id: aplicacaoNr1Id,
+      p_cpf: cpfLimpo
+    });
+
+    if (error) {
+      console.error('Erro ao chamar RPC:', error);
+      return {
+        status: 'erro',
+        token: null,
+        session_id: null,
+        mensagem: 'Erro ao processar sua requisição. Tente novamente.'
+      };
+    }
+
+    const resultado = (data ?? {}) as {
+      status: string;
+      token: string | null;
+      session_id: string | null;
+      mensagem: string;
+    };
+
+    return {
+      status: resultado.status as 'sucesso' | 'respondido' | 'sem_tokens' | 'aplicacao_inativa' | 'erro',
+      token: resultado.token,
+      session_id: resultado.session_id,
+      mensagem: resultado.mensagem
+    };
+  }
+
+  /**
+   * Normaliza o CPF removendo caracteres especiais.
+   */
+  private normalizarCpf(cpf: string): string {
+    return (cpf ?? '').replace(/\D/g, '');
+  }
+
+  /**
+   * Valida o CPF usando o algoritmo dos dígitos verificadores.
+   * Retorna false se:
+   *   - Não contém 11 dígitos
+   *   - É composto de dígitos repetidos (ex: 111.111.111-11)
+   *   - Os dígitos verificadores estão incorretos
+   */
+  private validarCpf(cpf: string): boolean {
+    const cpfLimpo = this.normalizarCpf(cpf);
+
+    // Deve ter exatamente 11 dígitos
+    if (cpfLimpo.length !== 11 || !/^\d+$/.test(cpfLimpo)) {
+      return false;
+    }
+
+    // Rejeita CPFs com todos os dígitos iguais (ex: 111.111.111-11)
+    if (/^(\d)\1{10}$/.test(cpfLimpo)) {
+      return false;
+    }
+
+    // Calcula o primeiro dígito verificador
+    let soma = 0;
+    for (let i = 0; i < 9; i++) {
+      soma += Number(cpfLimpo[i]) * (10 - i);
+    }
+    let resto = soma % 11;
+    const digito1 = resto < 2 ? 0 : 11 - resto;
+
+    // Calcula o segundo dígito verificador
+    soma = 0;
+    for (let i = 0; i < 10; i++) {
+      soma += Number(cpfLimpo[i]) * (11 - i);
+    }
+    resto = soma % 11;
+    const digito2 = resto < 2 ? 0 : 11 - resto;
+
+    // Verifica se os dígitos calculados correspondem aos informados
+    return Number(cpfLimpo[9]) === digito1 && Number(cpfLimpo[10]) === digito2;
+  }
+
   private isUuid(value: string): boolean {
     return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value.trim());
   }
