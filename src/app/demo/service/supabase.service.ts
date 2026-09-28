@@ -9,6 +9,8 @@ export class SupabaseService {
   private supabase: SupabaseClient;
 
   constructor() {
+    // O Interceptor HTTP global (NoCacheInterceptor) já desabilita cache para todas as requisições.
+    // Não é necessário configurar headers aqui, pois createClient() não aceita headers na configuração.
     this.supabase = createClient(environment.supabaseUrl, environment.supabaseKey);
   }
 

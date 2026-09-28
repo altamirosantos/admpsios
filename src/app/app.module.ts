@@ -1,5 +1,6 @@
 import { NgModule } from '@angular/core';
 import { HashLocationStrategy, LocationStrategy, PathLocationStrategy } from '@angular/common';
+import { HTTP_INTERCEPTORS } from '@angular/common/http';
 import { AppComponent } from './app.component';
 import { AppRoutingModule } from './app-routing.module';
 import { AppLayoutModule } from './layout/app.layout.module';
@@ -11,12 +12,14 @@ import { EventService } from './demo/service/event.service';
 import { IconService } from './demo/service/icon.service';
 import { NodeService } from './demo/service/node.service';
 import { PhotoService } from './demo/service/photo.service';
+import { NoCacheInterceptor } from './demo/service/no-cache.interceptor';
 
 @NgModule({
     declarations: [AppComponent, NotfoundComponent],
     imports: [AppRoutingModule, AppLayoutModule],
     providers: [
         { provide: LocationStrategy, useClass: PathLocationStrategy },
+        { provide: HTTP_INTERCEPTORS, useClass: NoCacheInterceptor, multi: true },
         CountryService, CustomerService, EventService, IconService, NodeService,
         PhotoService, ProductService
     ],

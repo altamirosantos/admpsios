@@ -1,4 +1,4 @@
-<div class="pesquisa-wrapper">
+<div class="pesquisa-wrapper notranslate" translate="no">
 
     <!-- CARREGANDO -->
     <div *ngIf="tela === 'CARREGANDO'" class="estado-central" role="status" aria-live="polite">
@@ -75,7 +75,7 @@
         <div class="icone-circulo icone-info" aria-hidden="true">
             <i class="pi pi-user"></i>
         </div>
-        <h1 class="estado-titulo">{{ nomeAplicacao || 'Pesquisa Psicossocial — NR-1' }}</h1>
+        <h1 class="estado-titulo"><span [textContent]="nomeAplicacao || 'Pesquisa Psicossocial — NR-1'"></span></h1>
         <p class="estado-descricao">
             Antes de começar, selecione o seu <strong>setor</strong> e o seu <strong>cargo</strong>.
             Isso é usado apenas para agrupar os resultados — suas respostas continuam anônimas.
@@ -93,7 +93,7 @@
                 <span class="campo-label">Setor <span class="obrigatoria">*</span></span>
                 <select class="campo-select" [(ngModel)]="setorId" aria-label="Setor">
                     <option [ngValue]="null" disabled selected>Selecione o seu setor</option>
-                    <option *ngFor="let s of setores" [ngValue]="s.id">{{ s.nome }}</option>
+                    <option *ngFor="let s of setores" [ngValue]="s.id" [textContent]="s.nome"></option>
                 </select>
             </label>
 
@@ -101,7 +101,7 @@
                 <span class="campo-label">Cargo</span>
                 <select class="campo-select" [(ngModel)]="cargoId" aria-label="Cargo">
                     <option [ngValue]="null" selected>Não informar / não listado</option>
-                    <option *ngFor="let c of cargos" [ngValue]="c.id">{{ c.nome }}</option>
+                    <option *ngFor="let c of cargos" [ngValue]="c.id" [textContent]="c.nome"></option>
                 </select>
             </label>
         </div>
@@ -121,7 +121,7 @@
         <header class="cabecalho" role="banner">
             <div class="cabecalho-conteudo">
                 <div class="cabecalho-topo">
-                    <h1 class="cabecalho-titulo">{{ nomeAplicacao || 'Pesquisa Psicossocial — NR-1' }}</h1>
+                    <h1 class="cabecalho-titulo"><span [textContent]="nomeAplicacao || 'Pesquisa Psicossocial — NR-1'"></span></h1>
                     <span class="badge-anonimo">
                         <i class="pi pi-lock" aria-hidden="true"></i> 100% anônima
                     </span>
@@ -135,7 +135,7 @@
                         <div class="progresso-preenchimento"
                             [style.width.%]="(numeroAtual / totalPerguntas) * 100"></div>
                     </div>
-                    <span class="progresso-texto">Pergunta {{ numeroAtual }} de {{ totalPerguntas }}</span>
+                    <span class="progresso-texto" [textContent]="'Pergunta ' + numeroAtual + ' de ' + totalPerguntas"></span>
                 </div>
             </div>
         </header>
@@ -148,24 +148,24 @@
 
         <!-- Pergunta atual -->
         <main class="pergunta-area" [attr.aria-live]="'polite'">
-            <div class="pergunta-card">
-                <span *ngIf="pergunta.fator_risco" class="pergunta-fator">{{ pergunta.fator_risco }}</span>
+            <div class="pergunta-card" *ngFor="let p of [pergunta]; trackBy: trackByPerguntaId">
+                <span *ngIf="p.fator_risco" class="pergunta-fator" [textContent]="p.fator_risco"></span>
                 <h2 class="pergunta-texto">
-                    {{ pergunta.texto }}
-                    <span *ngIf="pergunta.obrigatoria" class="obrigatoria" aria-label="obrigatória">*</span>
+                    <span [textContent]="p.texto"></span>
+                    <span *ngIf="p.obrigatoria" class="obrigatoria" aria-label="obrigatória">*</span>
                 </h2>
 
                 <!-- Opções como cards grandes -->
-                <div class="opcoes" role="radiogroup" [attr.aria-label]="pergunta.texto">
-                    <button *ngFor="let opcao of pergunta.opcoes; let i = index" type="button"
-                        class="opcao-card" [ngClass]="corEscala(pergunta, i)"
-                        [class.selecionada]="ehSelecionada(pergunta.id, opcao.id)"
-                        role="radio" [attr.aria-checked]="ehSelecionada(pergunta.id, opcao.id)"
-                        (click)="selecionarOpcao(pergunta.id, opcao.id)">
+                <div class="opcoes" role="radiogroup" [attr.aria-label]="p.texto">
+                    <button *ngFor="let opcao of p.opcoes; let i = index; trackBy: trackByOpcaoId" type="button"
+                        class="opcao-card" [ngClass]="corEscala(p, i)"
+                        [class.selecionada]="ehSelecionada(p.id, opcao.id)"
+                        role="radio" [attr.aria-checked]="ehSelecionada(p.id, opcao.id)"
+                        (click)="selecionarOpcao(p.id, opcao.id)">
                         <span class="opcao-marcador" aria-hidden="true">
-                            <i class="pi" [ngClass]="ehSelecionada(pergunta.id, opcao.id) ? 'pi-check-circle' : 'pi-circle'"></i>
+                            <i class="pi" [ngClass]="ehSelecionada(p.id, opcao.id) ? 'pi-check-circle' : 'pi-circle'"></i>
                         </span>
-                        <span class="opcao-texto">{{ opcao.texto }}</span>
+                        <span class="opcao-texto" [textContent]="opcao.texto"></span>
                     </button>
                 </div>
             </div>
@@ -191,8 +191,8 @@
 
         <p *ngIf="mensagemErro" class="mensagem-erro" role="alert">{{ mensagemErro }}</p>
 
-        <p *ngIf="ehUltima && !todasObrigatoriasRespondidas" class="aviso-pendente" role="status">
-            Você ainda tem perguntas obrigatórias sem resposta ({{ respondidasCount }} de {{ totalPerguntas }} respondidas).
+        <p *ngIf="ehUltima && !todasObrigatoriasRespondidas" class="aviso-pendente" role="status"
+            [textContent]="'Você ainda tem perguntas obrigatórias sem resposta (' + respondidasCount + ' de ' + totalPerguntas + ' respondidas).'">
         </p>
     </ng-container>
 

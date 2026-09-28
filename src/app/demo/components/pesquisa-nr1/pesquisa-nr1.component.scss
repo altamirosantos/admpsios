@@ -5,8 +5,13 @@
     --e1: #e4f5ea; --e1-b: #1f9d61; --e2: #eaf3e0; --e2-b: #6ea82f;
     --e3: #fdf6e3; --e3-b: #c9932a; --e4: #fdeede; --e4-b: #d9772e;
     --e5: #fbe6e6; --e5-b: #c23b3b;
-    display: block; min-height: 100dvh; background: var(--p-bg); color: var(--p-ink);
-    font-family: 'Segoe UI', Roboto, system-ui, -apple-system, sans-serif; line-height: 1.5;
+    display: block;
+    min-height: 100vh;  /* Fallback para navegadores antigos (Android < 8) */
+    min-height: 100dvh; /* Viewport dinâmico (navegadores modernos) */
+    background: var(--p-bg);
+    color: var(--p-ink);
+    font-family: 'Segoe UI', Roboto, system-ui, -apple-system, sans-serif;
+    line-height: 1.5;
 }
 *, *::before, *::after { box-sizing: border-box; }
 
@@ -58,7 +63,10 @@
 .aviso-lgpd { font-size: .85rem; color: var(--p-ink-soft); background: #eef2fb; border-radius: 10px; padding: 12px 14px; margin: 16px 0; }
 
 /* Pergunta */
-.pergunta-area { animation: entrar .28s ease; }
+.pergunta-area {
+    animation: entrar .15s ease;
+    will-change: opacity, transform;
+}
 @keyframes entrar { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 .pergunta-card { background: var(--p-surface); border: 1px solid var(--p-border); border-radius: 16px; padding: 22px 18px; }
 .pergunta-fator {
@@ -76,6 +84,7 @@
     padding: 16px 18px; border: 2px solid var(--p-border); border-radius: 14px;
     background: var(--p-surface); color: var(--p-ink); font-size: 1.08rem; font-weight: 600;
     text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
     transition: border-color .15s, background .15s, transform .1s;
 }
 .opcao-card:active { transform: scale(.99); }
@@ -103,6 +112,7 @@
 .btn {
     flex: 1; min-height: 52px; border: none; border-radius: 12px; font-size: 1.02rem; font-weight: 700;
     cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    touch-action: manipulation;
     transition: opacity .15s, background .15s;
 }
 .btn:disabled { opacity: .45; cursor: not-allowed; }

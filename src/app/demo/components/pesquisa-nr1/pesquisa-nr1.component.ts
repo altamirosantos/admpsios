@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, NgZone } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute } from '@angular/router';
 import {
@@ -40,14 +40,19 @@ export class PesquisaNr1Component implements OnInit {
 
     enviando = false;
     mensagemErro = '';
+    avancando = false;
 
     constructor(
         private readonly route: ActivatedRoute,
         private readonly pesquisaService: PesquisaNr1Service,
-        private readonly sanitizer: DomSanitizer
+        private readonly sanitizer: DomSanitizer,
+        private readonly cdr: ChangeDetectorRef,
+        private readonly ngZone: NgZone
     ) {}
 
     ngOnInit(): void {
+        document.documentElement.setAttribute('translate', 'no');
+        document.documentElement.lang = 'pt-BR';
         this.token = (this.route.snapshot.paramMap.get('token') || '').trim();
         void this.carregar();
     }
@@ -56,15 +61,25 @@ export class PesquisaNr1Component implements OnInit {
         this.tela = 'CARREGANDO';
 
         try {
+            console.log('📋 Iniciando carregamento do questionário NR-1 com token:', this.token);
             const resultado = await this.pesquisaService.carregarPorToken(this.token);
+
             this.nomeAplicacao = resultado.nomeAplicacao;
             this.perguntas = resultado.perguntas;
             this.setores = resultado.setores;
             this.cargos = resultado.cargos;
+            this.setorId = null;
             this.videoEmbedUrl = this.montarEmbedUrl(resultado.videoUrl);
             this.tela = this.telaPorSituacao(resultado.situacao);
+
+            console.log('✅ Questionário carregado com sucesso:', {
+                nomeAplicacao: this.nomeAplicacao,
+                totalPerguntas: this.perguntas.length,
+                tela: this.tela,
+                timestamp: new Date().toLocaleString()
+            });
         } catch (error) {
-            console.error('Erro ao carregar questionário NR-1:', error);
+            console.error('❌ Erro ao carregar questionário NR-1:', error);
             this.tela = 'ERRO';
         }
     }
@@ -185,12 +200,30 @@ export class PesquisaNr1Component implements OnInit {
     // --- Interação ---
 
     selecionarOpcao(perguntaId: string, opcaoId: string): void {
+        if (this.avancando) {
+            return;
+        }
+
         this.respostas = { ...this.respostas, [perguntaId]: opcaoId };
+
+        console.log('📝 Resposta registrada para pergunta:', perguntaId, 'opção:', opcaoId);
 
         // Auto-avança para a próxima pergunta (reduz toques no celular),
         // exceto na última — lá o usuário revisa e envia.
         if (!this.ehUltima) {
-            window.setTimeout(() => this.proxima(), 260);
+            this.avancando = true;
+            window.setTimeout(() => {
+                console.log('➡️ Avançando para pergunta', this.indiceAtual + 2, 'de', this.totalPerguntas);
+                this.proxima();
+                this.avancando = false;
+                Promise.resolve().then(() => {
+                    try {
+                        this.cdr.detectChanges();
+                    } catch (e) {
+                        console.debug?.('detectChanges error on microtask:', e);
+                    }
+                });
+            }, 300);
         }
     }
 
@@ -201,6 +234,15 @@ export class PesquisaNr1Component implements OnInit {
     proxima(): void {
         if (this.indiceAtual < this.totalPerguntas - 1) {
             this.indiceAtual++;
+            // Forçar detecção de mudanças para garantir re-render em todos os navegadores
+            this.cdr.markForCheck();
+            // Fallback: detectChanges() envolvido em try/catch para evitar erros se a view já foi destruída
+            try {
+                this.cdr.detectChanges();
+            } catch (e) {
+                console.debug?.('detectChanges error em proxima():', e);
+            }
+            console.log('✅ Índice atualizado para:', this.indiceAtual + 1, 'de', this.totalPerguntas);
             this.rolarTopo();
         }
     }
@@ -208,14 +250,28 @@ export class PesquisaNr1Component implements OnInit {
     anterior(): void {
         if (this.indiceAtual > 0) {
             this.indiceAtual--;
+            this.cdr.markForCheck();  // Forçar detecção de mudanças
+            try {
+                this.cdr.detectChanges();  // Fallback: detectChanges() para navegadores com problema
+            } catch (e) {
+                console.debug?.('detectChanges error em anterior():', e);
+            }
+            console.log('⬅️ Voltando para pergunta:', this.indiceAtual + 1, 'de', this.totalPerguntas);
             this.rolarTopo();
         }
     }
 
     private rolarTopo(): void {
         try {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            // Verificar suporte a 'smooth' antes de usar (compatibilidade com navegadores mobile antigos)
+            if (window.CSS?.supports('scroll-behavior', 'smooth')) {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else {
+                // Fallback para navegadores antigos (Samsung Internet, UC Browser, navegador nativo Android)
+                window.scrollTo(0, 0);
+            }
         } catch {
+            // Fallback final para browsers muito antigos
             window.scrollTo(0, 0);
         }
     }
@@ -224,6 +280,14 @@ export class PesquisaNr1Component implements OnInit {
      * Retorna uma classe de cor por posição da opção (escala Likert visual):
      * verde (positivo) -> vermelho (negativo). Baseada na ordem/quantidade.
      */
+    trackByPerguntaId(index: number, pergunta: PerguntaPublica): any {
+        return pergunta.id;
+    }
+
+    trackByOpcaoId(index: number, opcao: any): any {
+        return opcao.id;  // Usar ID da opção como chave para evitar re-renderização desnecessária
+    }
+
     corEscala(pergunta: PerguntaPublica, index: number): string {
         const total = pergunta.opcoes.length;
         if (total <= 1) {
