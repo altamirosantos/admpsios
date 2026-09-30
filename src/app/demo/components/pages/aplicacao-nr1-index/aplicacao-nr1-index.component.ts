@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { MessageService } from 'primeng/api';
 import {
     APLICACAO_STATUS,
@@ -85,6 +86,13 @@ export class AplicacaoNr1IndexComponent implements OnInit {
     qrAplicacaoDialog = false;
     aplicacaoParaQr: AplicacaoNr1 | null = null;
 
+    // Cartaz para impressão
+    cartazDialog = false;
+    aplicacaoParaCartaz: AplicacaoNr1 | null = null;
+    cartazHtmlContent = '';
+    cartazHtmlSanitizado: SafeResourceUrl | null = null;
+    carregandoCartaz = false;
+
     // Edição de status
     statusDialog = false;
     salvandoStatus = false;
@@ -101,7 +109,8 @@ export class AplicacaoNr1IndexComponent implements OnInit {
         private readonly empresaService: EmpresaService,
         private readonly filialService: FilialService,
         private readonly setorService: SetorService,
-        private readonly cargoService: CargoService
+        private readonly cargoService: CargoService,
+        private readonly sanitizer: DomSanitizer
     ) {}
 
     ngOnInit(): void {
@@ -371,6 +380,80 @@ export class AplicacaoNr1IndexComponent implements OnInit {
     abrirQrAplicacao(aplicacao: AplicacaoNr1): void {
         this.aplicacaoParaQr = aplicacao;
         this.qrAplicacaoDialog = true;
+    }
+
+    /** Carrega o modelo de cartaz e substitui a URL do questionário */
+    async abrirCartaz(aplicacao: AplicacaoNr1): Promise<void> {
+        if (!aplicacao.id) {
+            return;
+        }
+
+        this.aplicacaoParaCartaz = aplicacao;
+        this.cartazDialog = true;
+        this.carregandoCartaz = true;
+        this.cartazHtmlContent = '';
+        this.cartazHtmlSanitizado = null;
+
+        try {
+            // Carregar o modelo HTML
+            const response = await fetch('/assets/template/modelo-cartaz01.html');
+            if (!response.ok) {
+                throw new Error('Não foi possível carregar o modelo de cartaz');
+            }
+
+            let htmlContent = await response.text();
+
+            // Substituir a URL do questionário
+            const linkQuestionario = this.linkAcessoAplicacao(aplicacao.id);
+            htmlContent = htmlContent.replace(/\$\{LINK_QUESTIONARIO\}/g, linkQuestionario);
+
+            this.cartazHtmlContent = htmlContent;
+
+            // Criar data URL para o iframe (compatível com Angular security)
+            const blob = new Blob([htmlContent], { type: 'text/html; charset=utf-8' });
+            const dataUrl = URL.createObjectURL(blob);
+            this.cartazHtmlSanitizado = this.sanitizer.bypassSecurityTrustResourceUrl(dataUrl);
+        } catch (error) {
+            console.error('Erro ao carregar cartaz:', error);
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Erro',
+                detail: 'Não foi possível carregar o modelo de cartaz.',
+                life: 3000
+            });
+            this.cartazDialog = false;
+        } finally {
+            this.carregandoCartaz = false;
+        }
+    }
+
+    /** Imprime o cartaz */
+    imprimirCartaz(): void {
+        if (!this.cartazHtmlContent) {
+            return;
+        }
+
+        const nomeAplicacao = (this.aplicacaoParaCartaz?.nome || 'cartaz').replace(/[^\w\-]+/g, '_');
+        const janela = window.open('', '_blank');
+
+        if (!janela) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Atenção',
+                detail: 'Abra o bloqueador de pop-ups para imprimir o cartaz.',
+                life: 3000
+            });
+            return;
+        }
+
+        janela.document.write(this.cartazHtmlContent);
+        janela.document.close();
+        janela.focus();
+
+        // Aguardar o carregamento completo e abrir o diálogo de impressão
+        setTimeout(() => {
+            janela.print();
+        }, 500);
     }
 
     /** Copia o link da aplicação para a área de transferência */

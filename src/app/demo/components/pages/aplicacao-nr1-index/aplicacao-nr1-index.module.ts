@@ -6,6 +6,7 @@ import { DialogModule } from 'primeng/dialog';
 import { DropdownModule } from 'primeng/dropdown';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { InputTextModule } from 'primeng/inputtext';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { RippleModule } from 'primeng/ripple';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
@@ -30,7 +31,8 @@ import { AplicacaoNr1IndexComponent } from './aplicacao-nr1-index.component';
         InputNumberModule,
         DropdownModule,
         DialogModule,
-        TooltipModule
+        TooltipModule,
+        ProgressSpinnerModule
     ],
     declarations: [AplicacaoNr1IndexComponent]
 })

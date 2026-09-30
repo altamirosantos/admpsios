@@ -68,6 +68,8 @@
                                     (click)="abrirLinkAplicacao(aplicacao)" pTooltip="Gerar link único"></button>
                                 <button pButton pRipple icon="pi pi-qrcode" class="p-button-rounded p-button-warning"
                                     (click)="abrirQrAplicacao(aplicacao)" pTooltip="Gerar QR code"></button>
+                                <button pButton pRipple icon="pi pi-print" class="p-button-rounded p-button-success"
+                                    (click)="abrirCartaz(aplicacao)" pTooltip="Gerar cartaz para impressão"></button>
                                 <button pButton pRipple icon="pi pi-sync" class="p-button-rounded p-button-help"
                                     (click)="editarStatus(aplicacao)" pTooltip="Alterar status"></button>
                             </div>
@@ -336,6 +338,28 @@
             (click)="qrAplicacaoDialog = false"></button>
         <button pButton pRipple type="button" label="Baixar PNG" icon="pi pi-download"
             (click)="baixarQrAplicacao()" [disabled]="!aplicacaoParaQr"></button>
+    </ng-template>
+</p-dialog>
+
+<!-- Diálogo: Cartaz para impressão -->
+<p-dialog [(visible)]="cartazDialog" [modal]="true" [style]="{ width: '900px', height: '90vh' }"
+    [maximizable]="true" header="Cartaz para impressão" [dismissableMask]="true" class="p-fluid">
+    <ng-template pTemplate="content">
+        <div *ngIf="carregandoCartaz" class="text-center p-5">
+            <p-progressSpinner></p-progressSpinner>
+            <p class="text-color-secondary mt-3">Carregando cartaz...</p>
+        </div>
+        <div *ngIf="!carregandoCartaz && cartazHtmlContent" class="cartaz-container"
+            style="border: 1px solid var(--surface-border); border-radius: 8px; overflow-y: auto; height: calc(90vh - 200px);">
+            <iframe [src]="cartazHtmlSanitizado" title="Prévia do cartaz para impressão"
+                style="width: 100%; height: 100%; border: none;"></iframe>
+        </div>
+    </ng-template>
+    <ng-template pTemplate="footer">
+        <button pButton pRipple label="Fechar" icon="pi pi-times" class="p-button-text"
+            (click)="cartazDialog = false"></button>
+        <button pButton pRipple label="Imprimir" icon="pi pi-print" class="p-button-success"
+            (click)="imprimirCartaz()" [disabled]="carregandoCartaz || !cartazHtmlContent"></button>
     </ng-template>
 </p-dialog>
 
